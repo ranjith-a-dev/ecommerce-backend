@@ -1,10 +1,8 @@
 package com.ranjith.ecommerce.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,7 +36,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public Optional<Product> getProductById(@PathVariable Long id){
+    public Product getProductById(@PathVariable Long id){
         return service.getProductById(id);
     }
 

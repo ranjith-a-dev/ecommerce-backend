@@ -1,13 +1,13 @@
 package com.ranjith.ecommerce.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ranjith.ecommerce.dto.ProductUpdateDTO;
 import com.ranjith.ecommerce.entity.Product;
+import com.ranjith.ecommerce.exception.ProductNotFoundException;
 import com.ranjith.ecommerce.repository.ProductRepo;
 
 @Service
@@ -24,13 +24,13 @@ public class ProductService {
         return repo.findAll();
     }
 
-    public Optional<Product> getProductById(Long productId) {
-        return repo.findById(productId);
+    public Product getProductById(Long id) {
+        return repo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
     }
 
     public Product updateProduct(ProductUpdateDTO dto,Long id) {
         
-        Product product = repo.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+        Product product = repo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
         
         if(dto.getName() != null)
             product.setName(dto.getName());
@@ -45,6 +45,7 @@ public class ProductService {
     }
 
     public void deleteProduct(Long id) {
-        repo.deleteById(id);
+        Product product = repo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
+        repo.delete(product);
     }
 }
