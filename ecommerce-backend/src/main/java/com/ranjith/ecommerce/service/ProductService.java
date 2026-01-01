@@ -28,6 +28,10 @@ public class ProductService {
         return repo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
     }
 
+    public List<Product> searchProducts(String name){
+        return repo.findByNameContainingIgnoreCase(name);
+    }
+
     public Product updateProduct(ProductUpdateDTO dto,Long id) {
         
         Product product = repo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
