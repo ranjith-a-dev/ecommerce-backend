@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.ranjith.ecommerce.dto.ProductUpdateDTO;
 import com.ranjith.ecommerce.entity.Product;
 import com.ranjith.ecommerce.repository.ProductRepo;
 
@@ -27,15 +28,20 @@ public class ProductService {
         return repo.findById(productId);
     }
 
-    public Product updateProduct(Product product,Long id) {
+    public Product updateProduct(ProductUpdateDTO dto,Long id) {
         
-        Product currentProduct = repo.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
-        currentProduct.setName(product.getName());
-        currentProduct.setPrice(product.getPrice());
-        currentProduct.setStock(product.getStock());
-        currentProduct.setDescription(product.getDescription());
+        Product product = repo.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
         
-        return repo.save(currentProduct);
+        if(dto.getName() != null)
+            product.setName(dto.getName());
+        if(dto.getPrice() != null)
+            product.setPrice(dto.getPrice());
+        if(dto.getStock() != null)
+            product.setStock(dto.getStock());
+        if(dto.getDescription() != null)
+            product.setDescription(dto.getDescription());
+
+        return repo.save(product);
     }
 
     public void deleteProduct(Long id) {
