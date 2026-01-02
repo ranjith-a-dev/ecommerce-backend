@@ -2,14 +2,15 @@ package com.ranjith.ecommerce.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ranjith.ecommerce.dto.LoginRequestDTO;
+import com.ranjith.ecommerce.dto.LoginResponseDTO;
 import com.ranjith.ecommerce.dto.RegisterRequestDTO;
+import com.ranjith.ecommerce.dto.RegisterResponseDTO;
 import com.ranjith.ecommerce.service.AuthService;
 
 @RestController
@@ -20,13 +21,14 @@ public class AuthController {
     private AuthService service;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequestDTO dto){
+    public ResponseEntity<RegisterResponseDTO> register(@RequestBody RegisterRequestDTO dto){
         service.register(dto);
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok(new RegisterResponseDTO("User registered successfully"));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequestDTO dto){
-        return ResponseEntity.ok(service.login(dto));
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto){
+        String token = service.login(dto);
+        return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 }
