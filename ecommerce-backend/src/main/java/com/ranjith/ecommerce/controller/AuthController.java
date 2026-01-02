@@ -27,7 +27,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequestDTO dto){
-        System.out.println("Login HIT:: " + dto.getUsername());
         return ResponseEntity.ok(service.login(dto));
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.ranjith.ecommerce.dto.LoginRequestDTO;
 import com.ranjith.ecommerce.dto.RegisterRequestDTO;
+import com.ranjith.ecommerce.entity.Role;
 import com.ranjith.ecommerce.entity.User;
 import com.ranjith.ecommerce.exception.PasswordMismatchException;
 import com.ranjith.ecommerce.exception.UserAlreadyExistsException;
@@ -33,6 +34,7 @@ public class AuthService {
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setRole(Role.ROLE_USER);
 
         userRepo.save(user);
     }

@@ -3,6 +3,7 @@ package com.ranjith.ecommerce.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,6 +28,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET,"/products/**").authenticated()
+                .requestMatchers(HttpMethod.POST,"/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH,"/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE,"/products/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> 
