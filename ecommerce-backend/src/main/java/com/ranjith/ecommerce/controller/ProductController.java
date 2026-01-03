@@ -2,6 +2,7 @@ package com.ranjith.ecommerce.controller;
 
 import java.util.List;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +38,7 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(Pageable pageable){
+    public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(@ParameterObject Pageable pageable){
         return ResponseEntity.ok(service.getAllProducts(pageable));
     }
 

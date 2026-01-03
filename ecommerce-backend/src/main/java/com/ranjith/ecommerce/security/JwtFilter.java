@@ -26,13 +26,20 @@ public class JwtFilter extends OncePerRequestFilter{
 
     protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain filterChain) throws IOException, ServletException{
 
+        String path = request.getServletPath();
+
+        if(path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui.html")){
+            filterChain.doFilter(request,response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         String username = null;
         String token = null;
 
         if(authHeader != null && authHeader.startsWith("Bearer ")){
-            token = authHeader.substring(7);
+            token = authHeader.substring(7).trim();
             username = jwtUtil.extractUsername(token);
         }
 
