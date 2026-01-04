@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.ranjith.ecommerce.security.CustomAccessDeniedHandler;
 import com.ranjith.ecommerce.security.JwtFilter;
 
 @EnableMethodSecurity(prePostEnabled = true)
@@ -20,6 +21,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtFilter jwtFilter;
+
+    @Autowired
+    private CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
@@ -37,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE,"/products/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(ex -> ex.accessDeniedHandler(customAccessDeniedHandler))
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
