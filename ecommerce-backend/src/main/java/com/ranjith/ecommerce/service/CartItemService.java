@@ -5,10 +5,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ranjith.ecommerce.entity.CartItem;
 import com.ranjith.ecommerce.entity.Product;
 import com.ranjith.ecommerce.entity.User;
+import com.ranjith.ecommerce.exception.CartItemNotFoundException;
+import com.ranjith.ecommerce.exception.InsufficientStockException;
+import com.ranjith.ecommerce.exception.ProductNotFoundException;
+import com.ranjith.ecommerce.exception.UserNotFoundException;
 import com.ranjith.ecommerce.repository.CartItemRepo;
 import com.ranjith.ecommerce.repository.ProductRepo;
 import com.ranjith.ecommerce.repository.UserRepo;
@@ -29,7 +34,7 @@ public class CartItemService {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
         User user = userRepo.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         return user.getId();
     }
@@ -37,10 +42,16 @@ public class CartItemService {
     public CartItem addToCart(Long productId,int quantity){
         Long userId = getCurrentUserId();
 
-        Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found"));
+        Product product = productRepo.findById(productId).orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
         CartItem item = cartItemRepo.findByUserIdAndProductId(userId, productId).orElse(null);
         
+        int existingQuantity = item != null ? item.getQuantity() : 0;
+        int totalRequested = existingQuantity + quantity;
+
+        if(totalRequested > product.getStock())
+            throw new InsufficientStockException("Only " + product.getStock() + " is available in stock");
+
         if(item == null){
             CartItem newItem = new CartItem();
             newItem.setUserId(userId);
@@ -49,7 +60,7 @@ public class CartItemService {
             return cartItemRepo.save(newItem);
         }
 
-        item.setQuantity(quantity + item.getQuantity());
+        item.setQuantity(totalRequested);
         return cartItemRepo.save(item);
     }
 
@@ -58,16 +69,23 @@ public class CartItemService {
         return cartItemRepo.findByUserId(userId);
     }
 
-    public CartItem updateCartItem(Long prodcuctId,int quantity){
+    public CartItem updateCartItem(Long productId,int quantity){
         Long userId = getCurrentUserId();
 
-        CartItem item = cartItemRepo.findByUserIdAndProductId(userId, prodcuctId)
-            .orElseThrow(() -> new RuntimeException("Cart item not found"));
+        CartItem item = cartItemRepo.findByUserIdAndProductId(userId, productId)
+            .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
+
+        Product product = productRepo.findById(productId)
+            .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        
+        if(quantity > product.getStock())
+            throw new InsufficientStockException("Only " + product.getStock() + " is available in stock");
 
         item.setQuantity(quantity);
         return cartItemRepo.save(item);
     }
 
+    @Transactional
     public void deleteCartItem(Long productId){
         Long userId = getCurrentUserId();
         cartItemRepo.deleteByUserIdAndProductId(userId, productId);

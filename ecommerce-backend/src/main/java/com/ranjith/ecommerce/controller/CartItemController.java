@@ -28,9 +28,6 @@ public class CartItemController {
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/add")
     public ResponseEntity<CartItem> addToCart(@RequestParam Long productId,@RequestParam int quantity){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("AUTH = " + auth);
-        System.out.println("AUTHORITIES = " + auth.getAuthorities());
         return ResponseEntity.ok(cartItemService.addToCart(productId, quantity));
     }
 
