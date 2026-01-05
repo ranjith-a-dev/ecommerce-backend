@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.hibernate.annotations.CreationTimestamp;
-
 import com.ranjith.ecommerce.enums.OrderStatus;
 
 import jakarta.persistence.CascadeType;
