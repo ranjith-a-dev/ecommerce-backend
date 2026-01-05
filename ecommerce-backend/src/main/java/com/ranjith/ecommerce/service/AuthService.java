@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 
 import com.ranjith.ecommerce.dto.LoginRequestDTO;
 import com.ranjith.ecommerce.dto.RegisterRequestDTO;
-import com.ranjith.ecommerce.entity.Role;
 import com.ranjith.ecommerce.entity.User;
+import com.ranjith.ecommerce.enums.Role;
 import com.ranjith.ecommerce.exception.PasswordMismatchException;
 import com.ranjith.ecommerce.exception.UserAlreadyExistsException;
 import com.ranjith.ecommerce.repository.UserRepo;

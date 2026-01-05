@@ -90,4 +90,13 @@ public class CartItemService {
         Long userId = getCurrentUserId();
         cartItemRepo.deleteByUserIdAndProductId(userId, productId);
     }
+
+    public List<CartItem> getUserCart(User user) {
+        return cartItemRepo.findByUserId(user.getId());
+    }
+
+    @Transactional
+    public void clearCart(User user){
+        cartItemRepo.deleteByUserId(user.getId());
+    }
 }

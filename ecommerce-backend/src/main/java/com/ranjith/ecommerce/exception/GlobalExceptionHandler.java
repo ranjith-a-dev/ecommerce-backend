@@ -50,4 +50,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleInsufficientStock(InsufficientStockException ex){
         return new ResponseEntity<>(ex.getMessage(),HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(InsufficientCartException.class)
+    public ResponseEntity<String> handleInsufficientCart(InsufficientCartException ex){
+        return new ResponseEntity<>(ex.getMessage(),HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<String> handleOrderNotFound(OrderNotFoundException ex){
+        return new ResponseEntity<>(ex.getMessage(),HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CannotCancelOrderException.class)
+    public ResponseEntity<String> handleCannotCancelOrder(CannotCancelOrderException ex){
+        return new ResponseEntity<>(ex.getMessage(),HttpStatus.BAD_REQUEST);
+    }
 }

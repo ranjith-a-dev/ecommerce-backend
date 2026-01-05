@@ -1,4 +1,4 @@
-package com.ranjith.ecommerce.entity;
+package com.ranjith.ecommerce.enums;
 
 public enum Role {
     ROLE_USER,
