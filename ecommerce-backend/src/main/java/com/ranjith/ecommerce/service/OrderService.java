@@ -26,6 +26,7 @@ import com.ranjith.ecommerce.exception.UnauthorizedUserException;
 import com.ranjith.ecommerce.repository.OrderItemRepo;
 import com.ranjith.ecommerce.repository.OrderRepo;
 import com.ranjith.ecommerce.repository.ProductRepo;
+import com.ranjith.ecommerce.validation.OrderStatusValidator;
 
 @Service
 public class OrderService {
@@ -41,6 +42,9 @@ public class OrderService {
 
     @Autowired
     private CartItemService cartItemService;
+
+    @Autowired
+    OrderStatusValidator orderStatusValidator;
 
     @Transactional
     public OrderDetailDTO placeOrder(User user){
@@ -63,9 +67,6 @@ public class OrderService {
 
             if(cartItem.getQuantity() > product.getStock())
                 throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
-
-            product.setStock(product.getStock()-cartItem.getQuantity());
-            productRepo.save(product);
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
@@ -117,7 +118,7 @@ public class OrderService {
         if(!order.getUser().getId().equals(user.getId()))
             throw new CannotCancelOrderException("You cannot cancel this order");
 
-        validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
+        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
 
         if(order.getStatus() == OrderStatus.PAID){
             for(OrderItem orderItem : order.getOrderItems()){
@@ -139,7 +140,7 @@ public class OrderService {
         Order order = orderRepo.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found"));
         
-        validateStatusTransition(order.getStatus(), newStatus);
+        orderStatusValidator.validateStatusTransition(order.getStatus(), newStatus);
 
         order.setStatus(newStatus);
         Order savedOrder = orderRepo.save(order);
@@ -182,38 +183,5 @@ public class OrderService {
         dto.setCreatedAt(order.getCreatedAt());
 
         return dto;
-    }
-
-    private void validateStatusTransition(OrderStatus current,OrderStatus next){
-
-        switch(current) {
-
-            case CREATED:
-                if(next != OrderStatus.PAYMENT_PENDING && next != OrderStatus.CANCELLED)
-                    throw new IllegalStateException("Invalid order status transition");
-            
-            case PAYMENT_PENDING:
-                if(next != OrderStatus.PAID && next != OrderStatus.CANCELLED)
-                    throw new IllegalStateException("Invalid order status transition");
-
-            case PAID:
-                if(next != OrderStatus.SHIPPED && next != OrderStatus.CANCELLED)
-                    throw new IllegalStateException("Invalid order status transition");
-            
-            case SHIPPED:
-                if(next != OrderStatus.DELIVERED)
-                    throw new IllegalStateException("Invalid order status transition");
-            
-            case CANCELLED:
-                if(next != OrderStatus.REFUND_INITIATED)
-                    throw new IllegalStateException("Invalid order status transition");
-            
-            case REFUND_INITIATED:
-                if(next != OrderStatus.REFUNDED)
-                    throw new IllegalStateException("Invalid order status transition");
-            
-            default:
-                throw new IllegalStateException("Order is already closed");
-        }
     }
 }
