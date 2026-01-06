@@ -45,7 +45,7 @@ public class OrderService {
     @Transactional
     public OrderDetailDTO placeOrder(User user){
         
-        List<CartItem> cartItems = cartItemService.getUserCart(user);
+        List<CartItem> cartItems = cartItemService.getCartItemsEntity(user);
 
         if(cartItems.isEmpty())
             throw new InsufficientCartException("Cart is empty");

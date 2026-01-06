@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ranjith.ecommerce.entity.CartItem;
+import com.ranjith.ecommerce.dto.CartItemResponseDTO;
 import com.ranjith.ecommerce.service.CartItemService;
 
 @RestController
@@ -25,19 +25,19 @@ public class CartItemController {
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/add")
-    public ResponseEntity<CartItem> addToCart(@RequestParam Long productId,@RequestParam int quantity){
+    public ResponseEntity<CartItemResponseDTO> addToCart(@RequestParam Long productId,@RequestParam int quantity){
         return ResponseEntity.ok(cartItemService.addToCart(productId, quantity));
     }
 
     @PreAuthorize("hasRole('USER')")
     @GetMapping
-    public ResponseEntity<List<CartItem>> getMyCart(){
+    public ResponseEntity<List<CartItemResponseDTO>> getMyCart(){
         return ResponseEntity.ok(cartItemService.getMyCart());
     }
 
     @PreAuthorize("hasRole('USER')")
     @PutMapping("/update")
-    public ResponseEntity<CartItem> updateCartItem(@RequestParam Long productId,@RequestParam int quantity){
+    public ResponseEntity<CartItemResponseDTO> updateCartItem(@RequestParam Long productId,@RequestParam int quantity){
         return ResponseEntity.ok(cartItemService.updateCartItem(productId, quantity));
     }
 

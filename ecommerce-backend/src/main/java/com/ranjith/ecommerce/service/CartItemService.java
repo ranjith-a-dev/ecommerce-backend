@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ranjith.ecommerce.dto.CartItemResponseDTO;
 import com.ranjith.ecommerce.entity.CartItem;
 import com.ranjith.ecommerce.entity.Product;
 import com.ranjith.ecommerce.entity.User;
@@ -39,7 +40,8 @@ public class CartItemService {
         return user.getId();
     }
 
-    public CartItem addToCart(Long productId,int quantity){
+    @Transactional
+    public CartItemResponseDTO addToCart(Long productId,int quantity){
         Long userId = getCurrentUserId();
 
         Product product = productRepo.findById(productId).orElseThrow(() -> new ProductNotFoundException("Product not found"));
@@ -57,19 +59,20 @@ public class CartItemService {
             newItem.setUserId(userId);
             newItem.setProductId(product.getId());
             newItem.setQuantity(quantity);
-            return cartItemRepo.save(newItem);
+            return mapToDto(cartItemRepo.save(newItem));
         }
 
         item.setQuantity(totalRequested);
-        return cartItemRepo.save(item);
+        return mapToDto(cartItemRepo.save(item));
     }
 
-    public List<CartItem> getMyCart(){
+    public List<CartItemResponseDTO> getMyCart(){
         Long userId = getCurrentUserId();
-        return cartItemRepo.findByUserId(userId);
+        return cartItemRepo.findByUserId(userId).stream().map(this::mapToDto).toList();
     }
 
-    public CartItem updateCartItem(Long productId,int quantity){
+    @Transactional
+    public CartItemResponseDTO updateCartItem(Long productId,int quantity){
         Long userId = getCurrentUserId();
 
         CartItem item = cartItemRepo.findByUserIdAndProductId(userId, productId)
@@ -82,21 +85,30 @@ public class CartItemService {
             throw new InsufficientStockException("Only " + product.getStock() + " is available in stock");
 
         item.setQuantity(quantity);
-        return cartItemRepo.save(item);
+        return mapToDto(cartItemRepo.save(item));
     }
 
     @Transactional
     public void deleteCartItem(Long productId){
         Long userId = getCurrentUserId();
-        cartItemRepo.deleteByUserIdAndProductId(userId, productId);
-    }
-
-    public List<CartItem> getUserCart(User user) {
-        return cartItemRepo.findByUserId(user.getId());
+        CartItem item = cartItemRepo.findByUserIdAndProductId(userId, productId)
+            .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
+        cartItemRepo.delete(item);
     }
 
     @Transactional
     public void clearCart(User user){
         cartItemRepo.deleteByUserId(user.getId());
+    }
+
+    private CartItemResponseDTO mapToDto(CartItem cartItem){
+        return new CartItemResponseDTO(
+            cartItem.getProductId(),
+            cartItem.getQuantity()
+        );
+    }
+
+    public List<CartItem> getCartItemsEntity(User user) {
+        return cartItemRepo.findByUserId(user.getId());
     }
 }

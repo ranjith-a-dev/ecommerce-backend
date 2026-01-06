@@ -37,7 +37,7 @@ public class OrderController {
             .orElseThrow(() -> new UserNotFoundException("User not found"));
         return orderService.placeOrder(user);
     }
-
+    
     @GetMapping
     @PreAuthorize("hasRole('USER')")
     public List<OrderSummaryDTO> getMyOrders(@AuthenticationPrincipal UserDetails userDetails){
