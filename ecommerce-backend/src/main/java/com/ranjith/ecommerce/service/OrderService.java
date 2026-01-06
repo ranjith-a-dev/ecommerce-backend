@@ -52,7 +52,7 @@ public class OrderService {
 
         Order order = new Order();
         order.setUser(user);
-        order.setStatus(OrderStatus.PLACED);
+        order.setStatus(OrderStatus.CREATED);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
@@ -104,21 +104,44 @@ public class OrderService {
         return mapToDto(order);
     }
 
+    public List<OrderSummaryDTO> getAllOrders() {
+        return orderRepo.findAll().stream().map(this::mapToSummaryDto).toList();
+    }
+
     @Transactional
     public OrderSummaryDTO cancelOrder(Long orderId,User user){
 
-        Order order = getOrderEntity(orderId, user);
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if(order.getStatus() != OrderStatus.PLACED)
-            throw new CannotCancelOrderException("Order cannot be cancelled");
+        if(!order.getUser().getId().equals(user.getId()))
+            throw new CannotCancelOrderException("You cannot cancel this order");
 
-        for(OrderItem orderItem : order.getOrderItems()){
-            Product product = orderItem.getProduct();
-            product.setStock(product.getStock() + orderItem.getQuantity());
-            productRepo.save(product);
+        validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
+
+        if(order.getStatus() == OrderStatus.PAID){
+            for(OrderItem orderItem : order.getOrderItems()){
+                Product product = orderItem.getProduct();
+                product.setStock(product.getStock() + orderItem.getQuantity());
+                productRepo.save(product);
+            }
         }
 
         order.setStatus(OrderStatus.CANCELLED);
+        Order savedOrder = orderRepo.save(order);
+
+        return mapToSummaryDto(savedOrder);
+    }
+
+    @Transactional
+    public OrderSummaryDTO updateOrderStatus(Long orderId,OrderStatus newStatus){
+
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        
+        validateStatusTransition(order.getStatus(), newStatus);
+
+        order.setStatus(newStatus);
         Order savedOrder = orderRepo.save(order);
 
         return mapToSummaryDto(savedOrder);
@@ -160,14 +183,37 @@ public class OrderService {
 
         return dto;
     }
-    private Order getOrderEntity(Long orderId,User user){
 
-        Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+    private void validateStatusTransition(OrderStatus current,OrderStatus next){
 
-        if(!order.getUser().getId().equals(user.getId()))
-                throw new UnauthorizedUserException("Unauthorized access");
+        switch(current) {
 
-        return order;
+            case CREATED:
+                if(next != OrderStatus.PAYMENT_PENDING && next != OrderStatus.CANCELLED)
+                    throw new IllegalStateException("Invalid order status transition");
+            
+            case PAYMENT_PENDING:
+                if(next != OrderStatus.PAID && next != OrderStatus.CANCELLED)
+                    throw new IllegalStateException("Invalid order status transition");
+
+            case PAID:
+                if(next != OrderStatus.SHIPPED && next != OrderStatus.CANCELLED)
+                    throw new IllegalStateException("Invalid order status transition");
+            
+            case SHIPPED:
+                if(next != OrderStatus.DELIVERED)
+                    throw new IllegalStateException("Invalid order status transition");
+            
+            case CANCELLED:
+                if(next != OrderStatus.REFUND_INITIATED)
+                    throw new IllegalStateException("Invalid order status transition");
+            
+            case REFUND_INITIATED:
+                if(next != OrderStatus.REFUNDED)
+                    throw new IllegalStateException("Invalid order status transition");
+            
+            default:
+                throw new IllegalStateException("Order is already closed");
+        }
     }
 }

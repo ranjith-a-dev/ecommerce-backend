@@ -1,7 +1,12 @@
 package com.ranjith.ecommerce.enums;
 
 public enum OrderStatus {
-    PLACED,
+    CREATED,
+    PAYMENT_PENDING,
+    PAID,
+    SHIPPED,
+    DELIVERED,
     CANCELLED,
-    DELIVERED
+    REFUND_INITIATED,
+    REFUNDED
 }

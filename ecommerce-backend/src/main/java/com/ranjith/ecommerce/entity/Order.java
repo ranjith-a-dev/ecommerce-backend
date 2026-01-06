@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -46,12 +47,20 @@ public class Order {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(updatable = false)
+    private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL)
     private List<OrderItem> OrderItems;
 
     @PrePersist
     public void onCreate(){
         this.createdAt = LocalDateTime.now();
-        this.status = OrderStatus.PLACED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onUpdate(){
+        this.updatedAt = LocalDateTime.now();
     }
 }
