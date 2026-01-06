@@ -70,4 +70,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handlePaymentNotFound(PaymentNotFoundException ex){
         return new ResponseEntity<>(ex.getMessage(),HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(PaymentAlreadyDoneException.class)
+    public ResponseEntity<String> handlePaymentAlreadyDone(PaymentAlreadyDoneException ex){
+        return new ResponseEntity<>(ex.getMessage(),HttpStatus.CONFLICT);
+    }
 }

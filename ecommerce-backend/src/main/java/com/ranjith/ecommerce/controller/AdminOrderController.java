@@ -24,14 +24,14 @@ public class AdminOrderController {
     OrderService orderService;
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{orderId}/status")
-    public ResponseEntity<OrderSummaryDTO> updateOrderStatus(@PathVariable Long orderId,@RequestParam OrderStatus status){
-        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, status));
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<OrderSummaryDTO>> getAllOrders(){
         return ResponseEntity.ok(orderService.getAllOrders());
+    }
+    
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<OrderSummaryDTO> updateOrderStatus(@PathVariable Long orderId,@RequestParam OrderStatus status){
+        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, status));
     }
 }
