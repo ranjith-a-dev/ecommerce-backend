@@ -148,6 +148,26 @@ public class OrderService {
         return mapToSummaryDto(savedOrder);
     }
 
+    @Transactional
+    public OrderSummaryDTO refundRequest(Long orderId,User user){
+        
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        
+        if(!order.getUser().getId().equals(user.getId()))
+            throw new CannotCancelOrderException("This is not your order");
+
+        if(order.getStatus() != OrderStatus.PAID)
+            throw new IllegalStateException("Refund allowed only if you PAID this order");
+
+        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUND_INITIATED);
+
+        order.setStatus(OrderStatus.REFUND_INITIATED);
+        Order savedOrder = orderRepo.save(order);
+
+        return mapToSummaryDto(savedOrder);
+    }
+
     private OrderDetailDTO mapToDto(Order order){
 
         OrderDetailDTO dto = new OrderDetailDTO();

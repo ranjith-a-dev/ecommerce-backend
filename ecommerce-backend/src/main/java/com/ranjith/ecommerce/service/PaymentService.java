@@ -110,4 +110,46 @@ public class PaymentService {
         orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);   
         order.setStatus(OrderStatus.CANCELLED); 
     }
+
+    @Transactional
+    public void initiateRefund(Long orderId) {
+        
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        
+        if(order.getStatus() != OrderStatus.PAID)
+            throw new IllegalStateException("Refund allowed only for PAID orders");
+
+        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUND_INITIATED);
+
+        Payment payment = paymentRepo.findByOrder(order)
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
+
+        payment.setStatus(PaymentStatus.REFUND_INITIATED);
+        order.setStatus(OrderStatus.REFUND_INITIATED);
+    }
+
+    @Transactional
+    public void completeRefund(Long orderId){
+
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        
+        if(order.getStatus() != OrderStatus.REFUND_INITIATED)
+            throw new IllegalStateException("Refund not initiated");
+
+        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUNDED);
+
+        Payment payment = paymentRepo.findByOrder(order)
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
+
+        payment.setStatus(PaymentStatus.REFUNDED);
+        order.setStatus(OrderStatus.REFUNDED);
+
+        for(OrderItem orderItem : order.getOrderItems()){
+            Product product = orderItem.getProduct();
+            product.setStock(product.getStock() + orderItem.getQuantity());
+            productRepo.save(product);
+        }
+    }
 }

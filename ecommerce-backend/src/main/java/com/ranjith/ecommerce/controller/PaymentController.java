@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +49,20 @@ public class PaymentController {
     @PostMapping("/failure")
     public ResponseEntity<Void> markPaymentFailure(@RequestParam String paymentRef){
         paymentService.markPaymentFailure(paymentRef);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/refund/initiate/{orderId}")
+    public ResponseEntity<Void> initiateRefund(@PathVariable Long orderId){
+        paymentService.initiateRefund(orderId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/refund/complete/{orderId}")
+    public ResponseEntity<Void> completeRefund(@PathVariable Long orderId){
+        paymentService.completeRefund(orderId);
         return ResponseEntity.ok().build();
     }
 }

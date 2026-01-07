@@ -22,7 +22,7 @@ public class OrderStatusValidator {
                 break;
 
             case PAID:
-                if(next != OrderStatus.SHIPPED && next != OrderStatus.CANCELLED)
+                if(next != OrderStatus.SHIPPED && next != OrderStatus.REFUND_INITIATED)
                     throw new IllegalStateException("Invalid order status transition");
                 break;
             
@@ -31,18 +31,18 @@ public class OrderStatusValidator {
                     throw new IllegalStateException("Invalid order status transition");
                 break;
             
-            case CANCELLED:
-                if(next != OrderStatus.REFUND_INITIATED)
-                    throw new IllegalStateException("Invalid order status transition");
-                break;
-            
             case REFUND_INITIATED:
                 if(next != OrderStatus.REFUNDED)
                     throw new IllegalStateException("Invalid order status transition");
                 break;
             
-            default:
+            case CANCELLED:
+            case DELIVERED:
+            case REFUNDED:
                 throw new IllegalStateException("Order is already closed");
+            
+            default:
+                throw new IllegalStateException("Invalid order status");
         }
     }
 }

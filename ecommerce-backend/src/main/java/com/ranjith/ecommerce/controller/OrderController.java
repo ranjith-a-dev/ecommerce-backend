@@ -3,6 +3,7 @@ package com.ranjith.ecommerce.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,38 +32,48 @@ public class OrderController {
 
     @PostMapping("/checkout")
     @PreAuthorize("hasRole('USER')")
-    public OrderDetailDTO checkout(@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<OrderDetailDTO> checkout(@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return orderService.placeOrder(user);
+        return ResponseEntity.ok(orderService.placeOrder(user));
     }
     
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public List<OrderSummaryDTO> getMyOrders(@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<List<OrderSummaryDTO>> getMyOrders(@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return orderService.getOrdersByUser(user.getId());
+        return ResponseEntity.ok(orderService.getOrdersByUser(user.getId()));
     }
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasRole('USER')")
-    public OrderDetailDTO getOrderById(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<OrderDetailDTO> getOrderById(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return orderService.getOrderById(orderId, user);
+        return ResponseEntity.ok(orderService.getOrderById(orderId, user));
     }
 
     @PostMapping("/{orderId}/cancel")
     @PreAuthorize("hasRole('USER')")
-    public OrderSummaryDTO cancelOrder(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<OrderSummaryDTO> cancelOrder(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
     
-        return orderService.cancelOrder(orderId, user);
+        return ResponseEntity.ok(orderService.cancelOrder(orderId, user));
+    }
+
+    @PostMapping("/{orderId}/refund-request")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<OrderSummaryDTO> refundRequest(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
+
+        User user = userRepo.findByUsername(userDetails.getUsername())
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return ResponseEntity.ok(orderService.refundRequest(orderId,user));
     }
 }
