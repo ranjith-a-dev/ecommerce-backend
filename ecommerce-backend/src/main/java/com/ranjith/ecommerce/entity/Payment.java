@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import com.ranjith.ecommerce.enums.PaymentStatus;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -36,6 +37,7 @@ public class Payment {
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private PaymentStatus status;
 
     private String paymentReference;

@@ -14,4 +14,5 @@ public class OrderSummaryDTO {
     private BigDecimal totalAmount;
     private OrderStatus status;
     private LocalDateTime createdAt;
+    private boolean refundRequested;
 }

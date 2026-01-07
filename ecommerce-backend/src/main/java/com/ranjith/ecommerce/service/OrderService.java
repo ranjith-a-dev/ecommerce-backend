@@ -160,9 +160,8 @@ public class OrderService {
         if(order.getStatus() != OrderStatus.PAID)
             throw new IllegalStateException("Refund allowed only if you PAID this order");
 
-        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUND_INITIATED);
+        order.setRefundRequested(true);
 
-        order.setStatus(OrderStatus.REFUND_INITIATED);
         Order savedOrder = orderRepo.save(order);
 
         return mapToSummaryDto(savedOrder);
@@ -201,6 +200,7 @@ public class OrderService {
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setRefundRequested(order.isRefundRequested());
 
         return dto;
     }

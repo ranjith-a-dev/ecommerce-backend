@@ -120,6 +120,9 @@ public class PaymentService {
         if(order.getStatus() != OrderStatus.PAID)
             throw new IllegalStateException("Refund allowed only for PAID orders");
 
+        if(!order.isRefundRequested())
+            throw new IllegalStateException("Refund not requested by user");
+
         orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUND_INITIATED);
 
         Payment payment = paymentRepo.findByOrder(order)

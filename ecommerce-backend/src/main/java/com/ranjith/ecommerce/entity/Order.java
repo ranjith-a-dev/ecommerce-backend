@@ -53,6 +53,9 @@ public class Order {
     @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL)
     private List<OrderItem> OrderItems;
 
+    @Column(nullable = false)
+    private boolean refundRequested;
+
     @PrePersist
     public void onCreate(){
         this.createdAt = LocalDateTime.now();
