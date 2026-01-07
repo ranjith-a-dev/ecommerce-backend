@@ -1,5 +1,6 @@
 package com.ranjith.ecommerce.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
@@ -42,20 +43,19 @@ public class ProductController {
 
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(@ParameterObject Pageable pageable){
-        return ResponseEntity.ok(service.getAllProducts(pageable));
+    public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(@ParameterObject Pageable pageable,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean inStock
+    ){
+        return ResponseEntity.ok(service.getAllProducts(pageable,name,minPrice,maxPrice,inStock));
     }
 
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponseDTO> getProductById(@PathVariable Long id){
         return ResponseEntity.ok(service.getProductById(id));
-    }
-
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    @GetMapping("/search/name")
-    public ResponseEntity<List<ProductResponseDTO>> searchProducts(@RequestParam String name){
-        return ResponseEntity.ok(service.searchProducts(name));
     }
     
     @PreAuthorize("hasRole('ADMIN')")

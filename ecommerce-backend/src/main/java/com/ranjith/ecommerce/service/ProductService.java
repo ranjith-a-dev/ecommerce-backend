@@ -1,5 +1,6 @@
 package com.ranjith.ecommerce.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,17 +34,25 @@ public class ProductService {
         return toResponseDTO(repo.save(product));
     }
 
-    public Page<ProductResponseDTO> getAllProducts(Pageable pageable) {
-        return repo.findAll(pageable).map(this::toResponseDTO);
+    public Page<ProductResponseDTO> getAllProducts(
+        Pageable pageable,
+        String name,
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
+        Boolean inStock
+    ) {
+        return repo.findWithFilters(
+            name,
+            minPrice,
+            maxPrice,
+            inStock,
+            pageable
+        ).map(this::toResponseDTO);
     }
 
     public ProductResponseDTO getProductById(Long id) {
         Product product = repo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
         return toResponseDTO(product);
-    }
-
-    public List<ProductResponseDTO> searchProducts(String name){
-        return repo.findByNameContainingIgnoreCase(name).stream().map(this::toResponseDTO).toList();
     }
 
     public ProductResponseDTO updateProduct(ProductUpdateDTO dto,Long id) {
