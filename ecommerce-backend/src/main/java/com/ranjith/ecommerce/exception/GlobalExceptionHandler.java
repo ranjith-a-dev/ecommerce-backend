@@ -1,78 +1,99 @@
 package com.ranjith.ecommerce.exception;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import com.ranjith.ecommerce.dto.ApiErrorDTO;
+
+import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<String> handleProductNotFound(ProductNotFoundException ex){
-        return new ResponseEntity<String>(ex.getMessage(),HttpStatus.NOT_FOUND);
-    }
+
+    // @Valid DTO Validation
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String,String>> handleValidationErrors(MethodArgumentNotValidException ex){
+    public ResponseEntity<ApiErrorDTO> handleBodyValidation(MethodArgumentNotValidException ex){
+        
+        String message = ex.getBindingResult()
+            .getFieldError()
+            .getDefaultMessage();
 
-        Map<String,String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> errors.put(error.getField(),error.getDefaultMessage()));
-        return new ResponseEntity<>(errors,HttpStatus.BAD_REQUEST);
+        return ResponseEntity
+            .badRequest()
+            .body(new ApiErrorDTO(400, message));
     }
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<String> handleUserAlreadyExists(UserAlreadyExistsException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.BAD_REQUEST);
+    // @PathVariable @RequestParam Validation
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorDTO> handleValidation(ConstraintViolationException ex){
+
+        String message = ex.getConstraintViolations()
+            .iterator()
+            .next()
+            .getMessage();
+
+        return ResponseEntity
+            .badRequest()
+            .body(new ApiErrorDTO(400, message));
     }
 
-    @ExceptionHandler(PasswordMismatchException.class)
-    public ResponseEntity<String> handlePasswordMismatch(PasswordMismatchException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.BAD_REQUEST);
+    // Enum mismatch
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorDTO> handleEnumError(MethodArgumentTypeMismatchException ex){
+        
+        return ResponseEntity.badRequest()
+            .body(new ApiErrorDTO(400, "Inavlid value for parameter: " + ex.getName()));
     }
 
-    @ExceptionHandler(CartItemNotFoundException.class)
-    public ResponseEntity<String> handleCartItemNotFound(CartItemNotFoundException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.NOT_FOUND);
+    // NOT FOUND
+
+    @ExceptionHandler({
+        ProductNotFoundException.class,
+        CartItemNotFoundException.class,
+        OrderNotFoundException.class,
+        PaymentNotFoundException.class,
+        UserNotFoundException.class
+    })
+    public ResponseEntity<ApiErrorDTO> handleNotFound(RuntimeException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ApiErrorDTO(404, ex.getMessage()));
     }
 
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<String> handleUserNotFound(UserNotFoundException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.NOT_FOUND);
+    // CONFLICT
+
+    @ExceptionHandler({
+        InsufficientCartException.class,
+        InsufficientStockException.class,
+        PaymentAlreadyDoneException.class
+    })
+    public ResponseEntity<ApiErrorDTO> handleConflict(RuntimeException ex){
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(new ApiErrorDTO(409, ex.getMessage()));
     }
 
-    @ExceptionHandler(InsufficientStockException.class)
-    public ResponseEntity<String> handleInsufficientStock(InsufficientStockException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.CONFLICT);
+    // BAD REQUEST
+
+    @ExceptionHandler({
+        UserAlreadyExistsException.class,
+        PasswordMismatchException.class,
+        CannotCancelOrderException.class
+    })
+    public ResponseEntity<ApiErrorDTO> handleBadRequest(RuntimeException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ApiErrorDTO(400, ex.getMessage()));
     }
 
-    @ExceptionHandler(InsufficientCartException.class)
-    public ResponseEntity<String> handleInsufficientCart(InsufficientCartException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.CONFLICT);
-    }
-
-    @ExceptionHandler(OrderNotFoundException.class)
-    public ResponseEntity<String> handleOrderNotFound(OrderNotFoundException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(CannotCancelOrderException.class)
-    public ResponseEntity<String> handleCannotCancelOrder(CannotCancelOrderException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(PaymentNotFoundException.class)
-    public ResponseEntity<String> handlePaymentNotFound(PaymentNotFoundException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(PaymentAlreadyDoneException.class)
-    public ResponseEntity<String> handlePaymentAlreadyDone(PaymentAlreadyDoneException ex){
-        return new ResponseEntity<>(ex.getMessage(),HttpStatus.CONFLICT);
+    @ExceptionHandler(UnauthorizedUserException.class)
+    public ResponseEntity<ApiErrorDTO> handleUnauthorizedUser(UnauthorizedUserException ex){
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(new ApiErrorDTO(403, ex.getMessage()));
     }
 }

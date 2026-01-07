@@ -3,6 +3,7 @@ package com.ranjith.ecommerce.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,7 +37,7 @@ public class OrderController {
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return ResponseEntity.ok(orderService.placeOrder(user));
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(user));
     }
     
     @GetMapping

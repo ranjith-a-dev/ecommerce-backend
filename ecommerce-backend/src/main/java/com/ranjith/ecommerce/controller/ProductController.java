@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ranjith.ecommerce.dto.ApiResponseDTO;
 import com.ranjith.ecommerce.dto.ProductResponseDTO;
 import com.ranjith.ecommerce.dto.ProductUpdateDTO;
 import com.ranjith.ecommerce.entity.Product;
@@ -65,8 +66,8 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id){
+    public ResponseEntity<ApiResponseDTO> deleteProduct(@PathVariable Long id){
         service.deleteProduct(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new ApiResponseDTO("Product deleted successfully"));
     }
 }

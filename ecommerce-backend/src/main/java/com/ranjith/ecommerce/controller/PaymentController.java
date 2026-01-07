@@ -1,6 +1,7 @@
 package com.ranjith.ecommerce.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ranjith.ecommerce.dto.ApiResponseDTO;
 import com.ranjith.ecommerce.dto.PaymentResponseDTO;
 import com.ranjith.ecommerce.entity.User;
 import com.ranjith.ecommerce.exception.UserNotFoundException;
@@ -35,34 +37,35 @@ public class PaymentController {
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        return ResponseEntity.ok(paymentService.initiatePayment(orderId, user));
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(paymentService.initiatePayment(orderId, user));
     }
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/success")
-    public ResponseEntity<Void> markPaymentSuccess(@RequestParam String paymentRef){
+    public ResponseEntity<ApiResponseDTO> markPaymentSuccess(@RequestParam String paymentRef){
         paymentService.markPaymentSuccess(paymentRef);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new ApiResponseDTO("Payment marked as success"));
     }
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/failure")
-    public ResponseEntity<Void> markPaymentFailure(@RequestParam String paymentRef){
+    public ResponseEntity<ApiResponseDTO> markPaymentFailure(@RequestParam String paymentRef){
         paymentService.markPaymentFailure(paymentRef);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new ApiResponseDTO("Payment marked as failed"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/refund/initiate/{orderId}")
-    public ResponseEntity<Void> initiateRefund(@PathVariable Long orderId){
+    public ResponseEntity<ApiResponseDTO> initiateRefund(@PathVariable Long orderId){
         paymentService.initiateRefund(orderId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new ApiResponseDTO("Refund initiated successfully"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/refund/complete/{orderId}")
-    public ResponseEntity<Void> completeRefund(@PathVariable Long orderId){
+    public ResponseEntity<ApiResponseDTO> completeRefund(@PathVariable Long orderId){
         paymentService.completeRefund(orderId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new ApiResponseDTO("Refund completed successfully"));
     }
 }
