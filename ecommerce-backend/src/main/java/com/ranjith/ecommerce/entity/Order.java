@@ -47,7 +47,6 @@ public class Order {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(updatable = false)
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL)

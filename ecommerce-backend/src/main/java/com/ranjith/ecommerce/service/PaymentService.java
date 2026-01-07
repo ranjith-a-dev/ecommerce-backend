@@ -1,8 +1,11 @@
 package com.ranjith.ecommerce.service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,16 @@ public class PaymentService {
     @Autowired
     ProductRepo productRepo;
 
+    public Page<PaymentResponseDTO> getPayments(User user,PaymentStatus status,BigDecimal minAmount,BigDecimal maxAmount,Pageable pageable){
+        return paymentRepo.findUserPayments(user, status, minAmount, maxAmount, pageable)
+            .map(this::mapToPaymentResponseDTO);
+    }
+
+    public Page<PaymentResponseDTO> getAllPayments(Long userId,PaymentStatus status,BigDecimal minAmount,BigDecimal maxAmount,Pageable pageable){
+        return paymentRepo.findAllPayments(userId, status, minAmount, maxAmount, pageable)
+            .map(this::mapToPaymentResponseDTO);
+    }
+
     @Transactional
     public PaymentResponseDTO initiatePayment(Long orderId,User user){
         
@@ -63,11 +76,7 @@ public class PaymentService {
         paymentRepo.save(payment);
         orderRepo.save(order);
 
-        return new PaymentResponseDTO(
-            payment.getPaymentReference(),
-            payment.getStatus(),
-            payment.getAmount()
-        );
+        return mapToPaymentResponseDTO(payment);
     }
 
     @Transactional
@@ -154,5 +163,16 @@ public class PaymentService {
             product.setStock(product.getStock() + orderItem.getQuantity());
             productRepo.save(product);
         }
+    }
+
+    public PaymentResponseDTO mapToPaymentResponseDTO(Payment payment){
+
+        return new PaymentResponseDTO(
+            payment.getPaymentReference(),
+            payment.getStatus(),
+            payment.getAmount(),
+            payment.getOrder().getId(),
+            payment.getCreatedAt()
+        );
     }
 }
