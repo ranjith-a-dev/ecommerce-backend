@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ranjith.ecommerce.dto.AdminOrderSummaryDTO;
 import com.ranjith.ecommerce.dto.OrderDetailDTO;
 import com.ranjith.ecommerce.dto.OrderItemResponseDTO;
-import com.ranjith.ecommerce.dto.OrderSummaryDTO;
+import com.ranjith.ecommerce.dto.UserOrderSummaryDTO;
 import com.ranjith.ecommerce.entity.CartItem;
 import com.ranjith.ecommerce.entity.Order;
 import com.ranjith.ecommerce.entity.OrderItem;
@@ -90,8 +93,16 @@ public class OrderService {
         return mapToDto(savedOrder);
     }
 
-    public List<OrderSummaryDTO> getOrdersByUser(Long userId){
-        return orderRepo.findByUserId(userId).stream().map(this::mapToSummaryDto).toList();
+    public Page<UserOrderSummaryDTO> getOrdersByUser(
+        Long userId,
+        OrderStatus status,
+        BigDecimal mintotalAmount,
+        BigDecimal maxTotalAmount,
+        Pageable pageable
+    ){
+        return orderRepo.findOrdersByUser(
+            userId,status,mintotalAmount,maxTotalAmount,pageable)
+                .map(this::mapToSummaryDto);
     }
 
     public OrderDetailDTO getOrderById(Long orderId,User user){
@@ -105,12 +116,20 @@ public class OrderService {
         return mapToDto(order);
     }
 
-    public List<OrderSummaryDTO> getAllOrders() {
-        return orderRepo.findAll().stream().map(this::mapToSummaryDto).toList();
+    public Page<AdminOrderSummaryDTO> getAllOrders(
+        Long userId,
+        OrderStatus status,
+        BigDecimal mintotalAmount,
+        BigDecimal maxTotalAmount,
+        Boolean refundRequested,
+        Pageable pageable
+    ) {
+        return orderRepo.findAllOrders(userId, status, mintotalAmount, maxTotalAmount, refundRequested, pageable)
+            .map(this::mapToAdminSummaryDto);
     }
 
     @Transactional
-    public OrderSummaryDTO cancelOrder(Long orderId,User user){
+    public UserOrderSummaryDTO cancelOrder(Long orderId,User user){
 
         Order order = orderRepo.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found"));
@@ -135,7 +154,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderSummaryDTO updateOrderStatus(Long orderId,OrderStatus newStatus){
+    public UserOrderSummaryDTO updateOrderStatus(Long orderId,OrderStatus newStatus){
 
         Order order = orderRepo.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found"));
@@ -149,7 +168,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderSummaryDTO refundRequest(Long orderId,User user){
+    public UserOrderSummaryDTO refundRequest(Long orderId,User user){
         
         Order order = orderRepo.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found"));
@@ -193,14 +212,38 @@ public class OrderService {
         return dto;
     }
 
-    private OrderSummaryDTO mapToSummaryDto(Order order){
+    private UserOrderSummaryDTO mapToSummaryDto(Order order){
 
-        OrderSummaryDTO dto = new OrderSummaryDTO();
+        int totalItems = order.getOrderItems()
+            .stream()
+            .mapToInt(orderItem -> orderItem.getQuantity())
+            .sum();
+        
+        UserOrderSummaryDTO dto = new UserOrderSummaryDTO();
         dto.setOrderId(order.getId());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
+        dto.setTotalItems(totalItems);
         dto.setCreatedAt(order.getCreatedAt());
+
+        return dto;
+    }
+
+    private AdminOrderSummaryDTO mapToAdminSummaryDto(Order order){
+
+        int totalItems = order.getOrderItems()
+            .stream()
+            .mapToInt(orderItem -> orderItem.getQuantity())
+            .sum();
+        
+        AdminOrderSummaryDTO dto = new AdminOrderSummaryDTO();
+        dto.setOrderId(order.getId());
+        dto.setUserId(order.getUser().getId());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setStatus(order.getStatus());
+        dto.setTotalItems(totalItems);
         dto.setRefundRequested(order.isRefundRequested());
+        dto.setCreatedAt(order.getCreatedAt());
 
         return dto;
     }

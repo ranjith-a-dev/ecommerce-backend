@@ -157,7 +157,9 @@ public class PaymentService {
 
         payment.setStatus(PaymentStatus.REFUNDED);
         order.setStatus(OrderStatus.REFUNDED);
-
+        
+        order.setRefundRequested(false);
+        
         for(OrderItem orderItem : order.getOrderItems()){
             Product product = orderItem.getProduct();
             product.setStock(product.getStock() + orderItem.getQuantity());

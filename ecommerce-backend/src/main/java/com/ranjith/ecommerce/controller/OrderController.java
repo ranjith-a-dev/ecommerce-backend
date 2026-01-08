@@ -1,8 +1,10 @@
 package com.ranjith.ecommerce.controller;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,11 +14,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ranjith.ecommerce.dto.OrderDetailDTO;
-import com.ranjith.ecommerce.dto.OrderSummaryDTO;
+import com.ranjith.ecommerce.dto.UserOrderSummaryDTO;
 import com.ranjith.ecommerce.entity.User;
+import com.ranjith.ecommerce.enums.OrderStatus;
 import com.ranjith.ecommerce.exception.UserNotFoundException;
 import com.ranjith.ecommerce.repository.UserRepo;
 import com.ranjith.ecommerce.service.OrderService;
@@ -42,11 +46,17 @@ public class OrderController {
     
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<OrderSummaryDTO>> getMyOrders(@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<Page<UserOrderSummaryDTO>> getMyOrders(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @RequestParam(required = false) OrderStatus status,
+        @RequestParam(required = false) BigDecimal minTotalAmount,
+        @RequestParam(required = false) BigDecimal maxTotalAmount,
+        Pageable pageable
+    ){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return ResponseEntity.ok(orderService.getOrdersByUser(user.getId()));
+        return ResponseEntity.ok(orderService.getOrdersByUser(user.getId(),status,minTotalAmount,maxTotalAmount,pageable));
     }
 
     @GetMapping("/{orderId}")
@@ -60,7 +70,7 @@ public class OrderController {
 
     @PostMapping("/{orderId}/cancel")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<OrderSummaryDTO> cancelOrder(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<UserOrderSummaryDTO> cancelOrder(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -70,7 +80,7 @@ public class OrderController {
 
     @PostMapping("/{orderId}/refund-request")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<OrderSummaryDTO> refundRequest(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<UserOrderSummaryDTO> refundRequest(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));

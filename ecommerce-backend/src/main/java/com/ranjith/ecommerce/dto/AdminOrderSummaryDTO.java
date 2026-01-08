@@ -5,14 +5,20 @@ import java.time.LocalDateTime;
 
 import com.ranjith.ecommerce.enums.OrderStatus;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class OrderSummaryDTO {
+@AllArgsConstructor
+@NoArgsConstructor
+public class AdminOrderSummaryDTO {
 
     private Long orderId;
+    private Long userId;
     private BigDecimal totalAmount;
     private OrderStatus status;
-    private LocalDateTime createdAt;
+    private int totalItems;
     private boolean refundRequested;
+    private LocalDateTime createdAt;
 }
