@@ -24,6 +24,7 @@ public class AuthController {
     @Autowired
     private AuthService service;
 
+    
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO dto){
         service.register(dto);

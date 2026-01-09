@@ -21,8 +21,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorDTO> handleBodyValidation(MethodArgumentNotValidException ex){
         
         String message = ex.getBindingResult()
-            .getFieldError()
-            .getDefaultMessage();
+
+            .getFieldErrors()
+            .stream()
+            .findFirst()
+            .map(error -> error.getDefaultMessage())
+            .orElse("Validation failed");
 
         return ResponseEntity
             .badRequest()
