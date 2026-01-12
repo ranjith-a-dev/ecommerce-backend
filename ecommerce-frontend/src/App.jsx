@@ -4,7 +4,7 @@ import { Box, Toolbar } from "@mui/material";
 import Navbar from "./components/Navbar";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
-import Home from "./pages/Home";
+import Products from "./pages/Products";
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
       <Toolbar />
       <Box sx={{ backgroundColor: "#ffffff" }}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Products />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
