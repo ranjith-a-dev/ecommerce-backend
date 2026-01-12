@@ -64,7 +64,8 @@ public class GlobalExceptionHandler {
         CartItemNotFoundException.class,
         OrderNotFoundException.class,
         PaymentNotFoundException.class,
-        UserNotFoundException.class
+        UserNotFoundException.class,
+        CategoryNotFoundException.class
     })
     public ResponseEntity<ApiErrorDTO> handleNotFound(RuntimeException ex){
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

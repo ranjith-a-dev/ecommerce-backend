@@ -17,6 +17,7 @@ public interface ProductRepo extends JpaRepository<Product,Long> {
     @Query("""
         SELECT p from Product p
         WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%',:name,'%')))
+            AND (:categoryId IS NULL OR p.category.id = :categoryId)
             AND (:minPrice IS NULL OR p.price >= :minPrice)
             AND (:maxPrice IS NULL OR p.price <= :maxPrice)
             AND (
@@ -26,6 +27,7 @@ public interface ProductRepo extends JpaRepository<Product,Long> {
             )
     """)
     Page<Product> findWithFilters(
+        @Param("categoryId") Long categoryId,
         @Param("name") String name,
         @Param("minPrice") BigDecimal minPrice,
         @Param("maxPrice") BigDecimal maxPrice,

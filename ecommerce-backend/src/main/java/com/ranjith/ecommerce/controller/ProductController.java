@@ -20,15 +20,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ranjith.ecommerce.dto.ApiResponseDTO;
+import com.ranjith.ecommerce.dto.ProductRequestDTO;
 import com.ranjith.ecommerce.dto.ProductResponseDTO;
 import com.ranjith.ecommerce.dto.ProductUpdateDTO;
-import com.ranjith.ecommerce.entity.Product;
 import com.ranjith.ecommerce.service.ProductService;
 
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/api/products")
 public class ProductController {
 
     @Autowired
@@ -36,19 +36,20 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ProductResponseDTO> createProduct(@Valid @RequestBody Product product){
-        return new ResponseEntity<>(service.createProduct(product),HttpStatus.CREATED);
+    public ResponseEntity<ProductResponseDTO> createProduct(@Valid @RequestBody ProductRequestDTO dto){
+        return new ResponseEntity<>(service.createProduct(dto),HttpStatus.CREATED);
     }
 
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(@ParameterObject Pageable pageable,
+    public ResponseEntity<Page<ProductResponseDTO>> getAllProducts(
+            @ParameterObject Pageable pageable,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Boolean inStock
     ){
-        return ResponseEntity.ok(service.getAllProducts(pageable,name,minPrice,maxPrice,inStock));
+        return ResponseEntity.ok(service.getAllProducts(pageable,categoryId,name,minPrice,maxPrice,inStock));
     }
 
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
