@@ -1,6 +1,7 @@
 package com.ranjith.ecommerce.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
@@ -16,4 +17,6 @@ public class ProductUpdateDTO {
 
     @Min(value = 0,message = "Stock cannot be negative")
     private Integer stock;
+
+    private List<String> imageUrls;
 }

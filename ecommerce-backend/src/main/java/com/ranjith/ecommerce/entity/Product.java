@@ -1,8 +1,11 @@
 package com.ranjith.ecommerce.entity;
 
 import java.math.BigDecimal;
+import java.util.List;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -50,7 +53,8 @@ public class Product {
     @JoinColumn(name = "category_id" , nullable = false)
     private Category category;
 
-    @NotNull(message = "Image URL is required")
-    @Column(nullable = false)
-    private String imageUrl;
+    @ElementCollection
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url", nullable = false)
+    private List<String> imageUrls;
 }

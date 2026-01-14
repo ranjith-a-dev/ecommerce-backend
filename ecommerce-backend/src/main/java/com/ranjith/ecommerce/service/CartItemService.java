@@ -102,9 +102,17 @@ public class CartItemService {
     }
 
     private CartItemResponseDTO mapToDto(CartItem cartItem){
+        
+        Product product = productRepo.findById(cartItem.getProductId())
+            .orElseThrow(() -> new ProductNotFoundException("Product Not Found"));
+
         return new CartItemResponseDTO(
-            cartItem.getProductId(),
-            cartItem.getQuantity()
+            product.getId(),
+            product.getImageUrls().get(0),
+            product.getName(),
+            product.getStock(),
+            cartItem.getQuantity(),
+            product.getPrice()
         );
     }
 

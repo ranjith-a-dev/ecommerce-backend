@@ -34,7 +34,7 @@ public class ProductService {
             product.getDescription(),
             product.getPrice(),
             product.getStock(),
-            product.getImageUrl()
+            product.getImageUrls()
         );
     }
 
@@ -49,7 +49,7 @@ public class ProductService {
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
         product.setStock(dto.getStock());
-        product.setImageUrl(dto.getImageUrl());
+        product.setImageUrls(dto.getImageUrls());
         product.setCategory(category);
 
         return toResponseDTO(productRepo.save(product));
@@ -90,6 +90,9 @@ public class ProductService {
             product.setStock(dto.getStock());
         if(dto.getDescription() != null)
             product.setDescription(dto.getDescription());
+        if(dto.getImageUrls() != null && !dto.getImageUrls().isEmpty())
+            product.setImageUrls(dto.getImageUrls());
+            
 
         return toResponseDTO(productRepo.save(product));
     }
