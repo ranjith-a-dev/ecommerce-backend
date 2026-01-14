@@ -5,15 +5,30 @@ import {
   Typography,
   Button,
 } from "@mui/material";
+import api from "../api/axios";
 
-const ProductCard = ({ product, onAddToCart }) => {
+const ProductCard = ({ product, cartItems, refreshCart }) => {
   const outOfStock = product.stock === 0;
+
+  const addedToCart = cartItems?.some(
+    (item) => item.productId === product.id
+  );
+
+  const handleAdd = async () => {
+    await api.post("/cart", null, {
+      params: {
+        productId: product.id,
+        quantity: 1,
+      },
+    });
+    refreshCart();
+  };
 
   return (
     <Card sx={{ height: 320, display: "flex", flexDirection: "column" }}>
       <CardMedia
         component="img"
-        image={product.imageUrl}
+        image={product.imageUrls?.[0]}
         alt={product.name}
         sx={{ height: 160, objectFit: "contain", p: 1 }}
       />
@@ -22,7 +37,6 @@ const ProductCard = ({ product, onAddToCart }) => {
         <Typography variant="h6" noWrap>
           {product.name}
         </Typography>
-
         <Typography color="text.secondary">
           ₹ {product.price}
         </Typography>
@@ -31,10 +45,17 @@ const ProductCard = ({ product, onAddToCart }) => {
       <Button
         variant="contained"
         disabled={outOfStock}
-        onClick={() => onAddToCart(product.id)}
-        sx={{ m: 1 }}
+        onClick={handleAdd}
+        sx={{
+          m: 1,
+          bgcolor: addedToCart ? "success.main" : "primary.main",
+        }}
       >
-        {outOfStock ? "Out of Stock" : "Add to Cart"}
+        {outOfStock
+          ? "Out of Stock"
+          : addedToCart
+          ? "Added to Cart"
+          : "Add to Cart"}
       </Button>
     </Card>
   );
