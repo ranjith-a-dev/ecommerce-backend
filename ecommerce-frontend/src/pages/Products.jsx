@@ -1,4 +1,4 @@
-import { Container, Grid, Pagination, Typography, Select, MenuItem, TextField, Checkbox, FormControlLabel } from "@mui/material";
+import { Container, Grid, Pagination, Typography, Select, MenuItem, TextField, Checkbox, FormControlLabel, Box } from "@mui/material";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import ProductCard from "../components/ProductCard";
@@ -23,7 +23,7 @@ const Products = () => {
       const res = await api.get("/products", {
         params: {
           page: pageNumber - 1,
-          size: 9,
+          size: 10,
           categoryId: categoryId || undefined,
           name: search || undefined,
           minPrice: minPrice || undefined,
@@ -56,56 +56,68 @@ const Products = () => {
   }, [page, categoryId, search,minPrice,maxPrice,inStock]);
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Typography 
+        variant="h4" 
+        gutterBottom
+        sx={{ fontWeight: 700, mb: 4, color: "#1a1a1a" }}
+      >
         Products
       </Typography>
 
-      {/* CATEGORY FILTER */}
-      <Select
-        value={categoryId}
-        onChange={(e) => {
-          setCategoryId(e.target.value);
-          setPage(1);
-        }}
-        displayEmpty
-        sx={{ mb: 3, minWidth: 220 }}
-      >
-        <MenuItem value="">All</MenuItem>
-        <MenuItem value={1}>Mobiles</MenuItem>
-        <MenuItem value={2}>Laptops</MenuItem>
-        <MenuItem value={3}>Accessories</MenuItem>
-        <MenuItem value={4}>Smart Devices</MenuItem>
-      </Select>
+      {/* FILTERS SECTION */}
+      <Grid container spacing={2} sx={{ mb: 4, p: 2, backgroundColor: "#f9f9f9", borderRadius: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Select
+            value={categoryId}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setPage(1);
+            }}
+            displayEmpty
+            fullWidth
+            size="small"
+            sx={{ backgroundColor: "white" }}
+          >
+            <MenuItem value="">All Categories</MenuItem>
+            <MenuItem value={1}>Mobiles</MenuItem>
+            <MenuItem value={2}>Laptops</MenuItem>
+            <MenuItem value={3}>Accessories</MenuItem>
+            <MenuItem value={4}>Smart Devices</MenuItem>
+          </Select>
+        </Grid>
 
-       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
             label="Min Price"
             type="number"
+            size="small"
             fullWidth
             value={minPrice}
             onChange={(e) => {
               setMinPrice(e.target.value);
               setPage(1);
             }}
+            sx={{ backgroundColor: "white" }}
           />
         </Grid>
 
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
             label="Max Price"
             type="number"
+            size="small"
             fullWidth
             value={maxPrice}
             onChange={(e) => {
               setMaxPrice(e.target.value);
               setPage(1);
             }}
+            sx={{ backgroundColor: "white" }}
           />
         </Grid>
 
-        <Grid item xs={12} sm={4} sx={{ display: "flex", alignItems: "center" }}>
+        <Grid item xs={12} sm={6} md={3} sx={{ display: "flex", alignItems: "center" }}>
           <FormControlLabel
             control={
               <Checkbox
@@ -114,23 +126,26 @@ const Products = () => {
                   setInStock(e.target.checked);
                   setPage(1);
                 }}
+                size="small"
               />
             }
             label="In Stock Only"
+            sx={{ width: "100%" }}
           />
         </Grid>
       </Grid>
  
-      
       {/* PRODUCTS GRID */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ mt: 0.5 }}>
         {products.map((product) => (
-          <Grid item xs={12} sm={6} md={4} key={product.id}>
-            <ProductCard
-              product={product}
-              cartItems={cartItems}
-              refreshCart={fetchCarts}
-            />
+          <Grid item xs={12} sm={6} lg={4} key={product.id} sx={{ display: "flex" }}>
+            <Box sx={{ width: "100%" }}>
+              <ProductCard
+                product={product}
+                cartItems={cartItems}
+                refreshCart={fetchCarts}
+              />
+            </Box>
           </Grid>
         ))}
       </Grid>
