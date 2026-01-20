@@ -3,7 +3,9 @@ package com.ranjith.ecommerce.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.ranjith.ecommerce.entity.Cart;
 import com.ranjith.ecommerce.entity.CartItem;
+import com.ranjith.ecommerce.entity.Product;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,11 +14,9 @@ import java.util.Optional;
 @Repository
 public interface CartItemRepo extends JpaRepository<CartItem,Long> {
 
-    List<CartItem> findByUserId(Long userId);
+    Optional<CartItem> findByCartAndProduct(Cart cart,Product product);
 
-    Optional<CartItem> findByUserIdAndProductId(Long userId,Long productId);
+    List<CartItem> findByCart(Cart cart);
 
-    void deleteByUserIdAndProductId(Long userId,Long productId);
-
-    void deleteByUserId(Long userId);
+    void deleteByCart(Cart cart);
 }

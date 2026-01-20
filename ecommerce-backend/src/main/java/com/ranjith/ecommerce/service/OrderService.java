@@ -14,6 +14,7 @@ import com.ranjith.ecommerce.dto.AdminOrderSummaryDTO;
 import com.ranjith.ecommerce.dto.OrderDetailDTO;
 import com.ranjith.ecommerce.dto.OrderItemResponseDTO;
 import com.ranjith.ecommerce.dto.UserOrderSummaryDTO;
+import com.ranjith.ecommerce.entity.Cart;
 import com.ranjith.ecommerce.entity.CartItem;
 import com.ranjith.ecommerce.entity.Order;
 import com.ranjith.ecommerce.entity.OrderItem;
@@ -24,7 +25,6 @@ import com.ranjith.ecommerce.exception.CannotCancelOrderException;
 import com.ranjith.ecommerce.exception.InsufficientCartException;
 import com.ranjith.ecommerce.exception.InsufficientStockException;
 import com.ranjith.ecommerce.exception.OrderNotFoundException;
-import com.ranjith.ecommerce.exception.ProductNotFoundException;
 import com.ranjith.ecommerce.exception.UnauthorizedUserException;
 import com.ranjith.ecommerce.repository.OrderItemRepo;
 import com.ranjith.ecommerce.repository.OrderRepo;
@@ -44,18 +44,23 @@ public class OrderService {
     private ProductRepo productRepo;
 
     @Autowired
+    private CartService cartService;
+
+    @Autowired
     private CartItemService cartItemService;
 
     @Autowired
-    OrderStatusValidator orderStatusValidator;
+    private OrderStatusValidator orderStatusValidator;
 
     @Transactional
-    public OrderDetailDTO placeOrder(User user){
-        
-        List<CartItem> cartItems = cartItemService.getCartItemsEntity(user);
+    public OrderDetailDTO placeOrder(User user) {
 
-        if(cartItems.isEmpty())
+        Cart cart = cartService.getOrCreateCartForCurrentUser();
+        List<CartItem> cartItems = cartItemService.getCartItems(cart);
+
+        if (cartItems.isEmpty()) {
             throw new InsufficientCartException("Cart is empty");
+        }
 
         Order order = new Order();
         order.setUser(user);
@@ -64,12 +69,17 @@ public class OrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
 
-        for(CartItem cartItem : cartItems){
-            Product product = productRepo.findById(cartItem.getProductId())
-                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        for (CartItem cartItem : cartItems) {
 
-            if(cartItem.getQuantity() > product.getStock())
-                throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
+            Product product = cartItem.getProduct();
+
+            if (cartItem.getQuantity() > product.getStock()) {
+                throw new InsufficientStockException(
+                        "Insufficient stock for product: " + product.getName());
+            }
+
+            product.setStock(product.getStock() - cartItem.getQuantity());
+            productRepo.save(product);
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
@@ -77,116 +87,116 @@ public class OrderService {
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPriceAtPurchase(product.getPrice());
 
-            BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+            BigDecimal itemTotal =
+                    product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
             totalAmount = totalAmount.add(itemTotal);
 
             orderItems.add(orderItem);
         }
+
         order.setTotalAmount(totalAmount);
         order.setOrderItems(orderItems);
 
         Order savedOrder = orderRepo.save(order);
         orderItemRepo.saveAll(orderItems);
 
-        cartItemService.clearCart(user);
+        cartItemService.clearCart(cart);
 
-        return mapToDto(savedOrder);
+        return mapToDetailDto(savedOrder);
     }
 
     public Page<UserOrderSummaryDTO> getOrdersByUser(
-        Long userId,
-        OrderStatus status,
-        BigDecimal mintotalAmount,
-        BigDecimal maxTotalAmount,
-        Pageable pageable
-    ){
+            Long userId,
+            OrderStatus status,
+            BigDecimal minTotalAmount,
+            BigDecimal maxTotalAmount,
+            Pageable pageable) {
+
         return orderRepo.findOrdersByUser(
-            userId,status,mintotalAmount,maxTotalAmount,pageable)
-                .map(this::mapToSummaryDto);
+                userId, status, minTotalAmount, maxTotalAmount, pageable)
+                .map(this::mapToUserSummaryDto);
     }
 
-    public OrderDetailDTO getOrderById(Long orderId,User user){
+    public OrderDetailDTO getOrderById(Long orderId, User user) {
 
         Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-        
-        if(!order.getUser().getId().equals(user.getId()))
-            throw new UnauthorizedUserException("You are not authorized to view this order");
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        return mapToDto(order);
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedUserException("You are not authorized to view this order");
+        }
+
+        return mapToDetailDto(order);
     }
 
     public Page<AdminOrderSummaryDTO> getAllOrders(
-        Long userId,
-        OrderStatus status,
-        BigDecimal mintotalAmount,
-        BigDecimal maxTotalAmount,
-        Boolean refundRequested,
-        Pageable pageable
-    ) {
-        return orderRepo.findAllOrders(userId, status, mintotalAmount, maxTotalAmount, refundRequested, pageable)
-            .map(this::mapToAdminSummaryDto);
+            Long userId,
+            OrderStatus status,
+            BigDecimal minTotalAmount,
+            BigDecimal maxTotalAmount,
+            Boolean refundRequested,
+            Pageable pageable) {
+
+        return orderRepo.findAllOrders(
+                userId, status, minTotalAmount, maxTotalAmount, refundRequested, pageable)
+                .map(this::mapToAdminSummaryDto);
     }
 
     @Transactional
-    public UserOrderSummaryDTO cancelOrder(Long orderId,User user){
+    public UserOrderSummaryDTO cancelOrder(Long orderId, User user) {
 
         Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if(!order.getUser().getId().equals(user.getId()))
+        if (!order.getUser().getId().equals(user.getId())) {
             throw new CannotCancelOrderException("You cannot cancel this order");
+        }
 
         orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
 
-        if(order.getStatus() == OrderStatus.PAID){
-            for(OrderItem orderItem : order.getOrderItems()){
-                Product product = orderItem.getProduct();
-                product.setStock(product.getStock() + orderItem.getQuantity());
+        if (order.getStatus() == OrderStatus.PAID) {
+            for (OrderItem item : order.getOrderItems()) {
+                Product product = item.getProduct();
+                product.setStock(product.getStock() + item.getQuantity());
                 productRepo.save(product);
             }
         }
 
         order.setStatus(OrderStatus.CANCELLED);
-        Order savedOrder = orderRepo.save(order);
-
-        return mapToSummaryDto(savedOrder);
+        return mapToUserSummaryDto(orderRepo.save(order));
     }
 
     @Transactional
-    public UserOrderSummaryDTO updateOrderStatus(Long orderId,OrderStatus newStatus){
+    public UserOrderSummaryDTO updateOrderStatus(Long orderId, OrderStatus newStatus) {
 
         Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-        
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
         orderStatusValidator.validateStatusTransition(order.getStatus(), newStatus);
 
         order.setStatus(newStatus);
-        Order savedOrder = orderRepo.save(order);
-
-        return mapToSummaryDto(savedOrder);
+        return mapToUserSummaryDto(orderRepo.save(order));
     }
 
     @Transactional
-    public UserOrderSummaryDTO refundRequest(Long orderId,User user){
-        
-        Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-        
-        if(!order.getUser().getId().equals(user.getId()))
-            throw new CannotCancelOrderException("This is not your order");
+    public UserOrderSummaryDTO refundRequest(Long orderId, User user) {
 
-        if(order.getStatus() != OrderStatus.PAID)
-            throw new IllegalStateException("Refund allowed only if you PAID this order");
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new CannotCancelOrderException("This is not your order");
+        }
+
+        if (order.getStatus() != OrderStatus.PAID) {
+            throw new IllegalStateException("Refund allowed only for PAID orders");
+        }
 
         order.setRefundRequested(true);
-
-        Order savedOrder = orderRepo.save(order);
-
-        return mapToSummaryDto(savedOrder);
+        return mapToUserSummaryDto(orderRepo.save(order));
     }
 
-    private OrderDetailDTO mapToDto(Order order){
+    private OrderDetailDTO mapToDetailDto(Order order) {
 
         OrderDetailDTO dto = new OrderDetailDTO();
         dto.setOrderId(order.getId());
@@ -194,7 +204,7 @@ public class OrderService {
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
 
-        List<OrderItemResponseDTO> itemDtos = order.getOrderItems().stream().map(item -> {
+        List<OrderItemResponseDTO> items = order.getOrderItems().stream().map(item -> {
 
             OrderItemResponseDTO itemDto = new OrderItemResponseDTO();
             itemDto.setProductId(item.getProduct().getId());
@@ -206,19 +216,20 @@ public class OrderService {
             itemDto.setItemTotal(itemTotal);
 
             return itemDto;
-        }).toList();
-        
-        dto.setItems(itemDtos);
+
+        }).toList(); 
+
+        dto.setItems(items);
         return dto;
     }
 
-    private UserOrderSummaryDTO mapToSummaryDto(Order order){
+    private UserOrderSummaryDTO mapToUserSummaryDto(Order order) {
 
         int totalItems = order.getOrderItems()
             .stream()
-            .mapToInt(orderItem -> orderItem.getQuantity())
+            .mapToInt(OrderItem::getQuantity)
             .sum();
-        
+
         UserOrderSummaryDTO dto = new UserOrderSummaryDTO();
         dto.setOrderId(order.getId());
         dto.setTotalAmount(order.getTotalAmount());
@@ -229,13 +240,13 @@ public class OrderService {
         return dto;
     }
 
-    private AdminOrderSummaryDTO mapToAdminSummaryDto(Order order){
+    private AdminOrderSummaryDTO mapToAdminSummaryDto(Order order) {
 
         int totalItems = order.getOrderItems()
             .stream()
-            .mapToInt(orderItem -> orderItem.getQuantity())
+            .mapToInt(OrderItem::getQuantity)
             .sum();
-        
+
         AdminOrderSummaryDTO dto = new AdminOrderSummaryDTO();
         dto.setOrderId(order.getId());
         dto.setUserId(order.getUser().getId());
