@@ -60,6 +60,9 @@ const Navbar = () => {
           >
           Cart
           </Typography>
+          <Button color="inherit" component={Link} to="/orders">
+            Orders
+          </Button>
           <Button color="inherit" component={Link} to="/login">
             Login
           </Button>
