@@ -17,7 +17,7 @@ import com.ranjith.ecommerce.enums.PaymentStatus;
 import com.ranjith.ecommerce.service.PaymentService;
 
 @RestController
-@RequestMapping("/admin/payments")
+@RequestMapping("/api/admin/payments")
 public class PaymentAdminController {
 
     @Autowired

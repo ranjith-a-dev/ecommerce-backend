@@ -53,7 +53,7 @@ public class OrderService {
     private OrderStatusValidator orderStatusValidator;
 
     @Transactional
-    public OrderDetailDTO placeOrder(User user) {
+    public OrderDetailDTO placeOrder(User user,String shippingAddress) {
 
         Cart cart = cartService.getOrCreateCartForCurrentUser();
         List<CartItem> cartItems = cartItemService.getCartItems(cart);
@@ -64,6 +64,7 @@ public class OrderService {
 
         Order order = new Order();
         order.setUser(user);
+        order.setShippingAddress(shippingAddress);
         order.setStatus(OrderStatus.CREATED);
 
         BigDecimal totalAmount = BigDecimal.ZERO;

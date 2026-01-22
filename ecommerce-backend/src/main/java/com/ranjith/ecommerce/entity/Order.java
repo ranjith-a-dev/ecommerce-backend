@@ -52,6 +52,9 @@ public class Order {
     @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL)
     private List<OrderItem> OrderItems;
 
+    @Column(nullable = false , length = 500)
+    private String shippingAddress;
+
     @Column(nullable = false)
     private boolean refundRequested;
 

@@ -24,7 +24,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 @RestController
-@RequestMapping("/admin/orders")
+@RequestMapping("api/admin/orders")
 @Validated
 public class AdminOrderController {
     

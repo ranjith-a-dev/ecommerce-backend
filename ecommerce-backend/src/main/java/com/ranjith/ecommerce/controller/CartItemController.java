@@ -20,7 +20,7 @@ import com.ranjith.ecommerce.dto.CartItemResponseDTO;
 import com.ranjith.ecommerce.service.CartItemService;
 
 @RestController
-@RequestMapping("api/cart")
+@RequestMapping("/api/cart")
 public class CartItemController {
 
     @Autowired

@@ -63,15 +63,15 @@ public class PaymentController {
             .body(paymentService.initiatePayment(orderId, user));
     }
 
-    @PreAuthorize("hasRole('USER')")
     @PostMapping("/success")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponseDTO> markPaymentSuccess(@RequestParam String paymentRef){
         paymentService.markPaymentSuccess(paymentRef);
         return ResponseEntity.ok(new ApiResponseDTO("Payment marked as success"));
     }
 
-    @PreAuthorize("hasRole('USER')")
     @PostMapping("/failure")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponseDTO> markPaymentFailure(@RequestParam String paymentRef){
         paymentService.markPaymentFailure(paymentRef);
         return ResponseEntity.ok(new ApiResponseDTO("Payment marked as failed"));

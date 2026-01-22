@@ -94,12 +94,7 @@ public class PaymentService {
 
         orderStatusValidator.validateStatusTransition(order.getStatus(),OrderStatus.PAID);
 
-        for(OrderItem orderItem : order.getOrderItems()){
-            Product product = orderItem.getProduct();
-            product.setStock(product.getStock() - orderItem.getQuantity());
-            productRepo.save(product);
-        }
-
+        // Stock is already deducted in OrderService.placeOrder(), no need to deduct again
         order.setStatus(OrderStatus.PAID);
     }
 
