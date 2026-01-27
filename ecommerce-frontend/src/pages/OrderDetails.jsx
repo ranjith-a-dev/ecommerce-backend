@@ -9,26 +9,25 @@ import {
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import { orderService } from "../api/services";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
 
-  const fetchOrder = async () => {
-    try {
-      const res = await api.get(`/orders/${orderId}`);
-      setOrder(res.data);
-    // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      console.error("Failed to load order");
-    }
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const res = await orderService.getOrderById(orderId);
+        setOrder(res.data);
+      // eslint-disable-next-line no-unused-vars
+      } catch (err) {
+        console.error("Failed to load order");
+      }
+    };
+
     fetchOrder();
-  }, []);
+  }, [orderId]);
 
   if (!order) {
     return <Typography sx={{ mt: 4 }}>Loading...</Typography>;

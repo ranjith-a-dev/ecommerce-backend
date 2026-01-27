@@ -1,6 +1,6 @@
 import { Container, Grid, Pagination, Typography, Select, MenuItem, TextField, Checkbox, FormControlLabel, Box } from "@mui/material";
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import { productService, cartService } from "../api/services";
 import ProductCard from "../components/ProductCard";
 import { useSearchParams } from "react-router-dom";
 
@@ -20,16 +20,12 @@ const Products = () => {
 
   const fetchProducts = async (pageNumber) => {
     try {
-      const res = await api.get("/products", {
-        params: {
-          page: pageNumber - 1,
-          size: 10,
-          categoryId: categoryId || undefined,
-          name: search || undefined,
-          minPrice: minPrice || undefined,
-          maxPrice: maxPrice || undefined,
-          inStock: inStock ? true : undefined,
-        },
+      const res = await productService.getAllProducts(pageNumber - 1, 10, {
+        categoryId: categoryId || undefined,
+        name: search || undefined,
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
+        inStock: inStock ? true : undefined,
       });
 
       setProducts(res.data.content);
@@ -41,7 +37,7 @@ const Products = () => {
 
   const fetchCarts = async () => {
     try{
-      const res = await api.get("/cart");
+      const res = await cartService.getCart();
       setCartItems(res.data);
     }
     catch{
@@ -49,11 +45,11 @@ const Products = () => {
     }
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProducts(page);
     fetchCarts();
-  }, [page, categoryId, search,minPrice,maxPrice,inStock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, categoryId, search, minPrice, maxPrice, inStock]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>

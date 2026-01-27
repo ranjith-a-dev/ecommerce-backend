@@ -7,7 +7,7 @@ import {
   Box,
   Chip,
 } from "@mui/material";
-import api from "../api/axios";
+import { cartService } from "../api/services";
 import { useNavigate } from "react-router-dom";
 
 const ProductCard = ({ product, cartItems, refreshCart }) => {
@@ -19,12 +19,7 @@ const ProductCard = ({ product, cartItems, refreshCart }) => {
   );
 
   const handleAdd = async () => {
-    await api.post("/cart", null, {
-      params: {
-        productId: product.id,
-        quantity: 1,
-      },
-    });
+    await cartService.addToCart(product.id, 1);
     refreshCart();
   };
 

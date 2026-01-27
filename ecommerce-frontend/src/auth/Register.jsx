@@ -1,7 +1,7 @@
  
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import api from "../api/axios";
+import { authService } from "../api/services";
 
 const Register = () => {
   const [username,setUsername] = useState("");
@@ -21,7 +21,7 @@ const Register = () => {
     }
 
     try{
-      const response = await api.post("/auth/register",{username,password});
+      const response = await authService.register(username, password);
       alert(response.data.message);
       window.location.href = "/login";
     }

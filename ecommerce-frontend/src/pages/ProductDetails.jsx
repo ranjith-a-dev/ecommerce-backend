@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import { productService, cartService } from "../api/services";
 import {
   Container,
   Typography,
@@ -14,13 +14,26 @@ const ProductDetails = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
-    api.get(`/products/${id}`)
+    productService.getProductById(id)
       .then(res => setProduct(res.data))
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleAddToCart = async () => {
+    try {
+      setAddingToCart(true);
+      await cartService.addToCart(product.id, 1);
+      alert("Added to cart successfully");
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to add to cart");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   if (loading) return <CircularProgress />;
   if (!product) return <Typography>Product not found</Typography>;
@@ -64,9 +77,10 @@ const ProductDetails = () => {
           <Button
             variant="contained"
             sx={{ mt: 3 }}
-            disabled={product.stock === 0}
+            disabled={product.stock === 0 || addingToCart}
+            onClick={handleAddToCart}
           >
-            Add to Cart
+            {addingToCart ? "Adding..." : "Add to Cart"}
           </Button>
         </Box>
       </Box>

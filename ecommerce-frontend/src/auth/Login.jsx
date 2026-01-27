@@ -1,7 +1,7 @@
  
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import api from "../api/axios";
+import { authService } from "../api/services";
 
 const Login = () => {
   const [username,setUsername] = useState("");
@@ -9,9 +9,9 @@ const Login = () => {
 
   const handleLogin = async () => {
     try{
-      const response = await api.post("/auth/login",{username,password});
+      const response = await authService.login(username, password);
 
-      localStorage.setItem("token",response.data.token);
+      localStorage.setItem("token", response.data.token);
       alert("Login successful");
       window.location.href = "/";
     }

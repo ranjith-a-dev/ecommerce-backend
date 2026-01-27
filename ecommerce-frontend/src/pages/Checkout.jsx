@@ -8,28 +8,45 @@ import {
   Button,
   Divider,
   Box,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  Chip,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { cartService, orderService } from "../api/services";
+import { ShoppingBag, LocalShipping, CreditCard } from "@mui/icons-material";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [address, setAddress] = useState("");
+  const [formData, setFormData] = useState({
+    fullName: "",
+    phoneNumber: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+    deliveryInstructions: "",
+  });
   const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
-      const res = await api.get("/cart");
+      const res = await cartService.getCart();
       setCartItems(res.data);
     } catch {
       setCartItems([]);
     }
-  };
+  }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totalAmount = cartItems.reduce(
@@ -37,99 +54,390 @@ const Checkout = () => {
     0
   );
 
-  const handleProceed = () => {
-  if (!address.trim()) {
-    alert("Please enter shipping address");
-    return;
-  }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
 
-  navigate("/payment", {
-    state: {
-      cartItems,
-      totalAmount,
-      shippingAddress: address,
-    },
-  });
-};
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
+    if (!formData.streetAddress.trim()) newErrors.streetAddress = "Street address is required";
+    if (!formData.city.trim()) newErrors.city = "City is required";
+    if (!formData.state.trim()) newErrors.state = "State is required";
+    if (!formData.postalCode.trim()) newErrors.postalCode = "Postal code is required";
+    if (!formData.country.trim()) newErrors.country = "Country is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
+  const handleProceed = async () => {
+    if (!validateForm()) {
+      alert("Please fill all required fields");
+      return;
+    }
 
-  return (
-    <Container maxWidth="md" sx={{ mt: 6 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 4 }}>
-        Checkout
-      </Typography>
+    setLoading(true);
+    try {
+      await orderService.checkout({
+        shippingAddress: formData,
+      });
+      alert("Order placed successfully!");
+      navigate("/orders");
+    } catch (error) {
+      alert(
+        error.response?.data?.message || "Failed to place order. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
+      {/* HEADER */}
+      <Box sx={{ mb: 4 }}>
+        <Typography 
+          variant="h3" 
+          sx={{ 
+            fontWeight: 700, 
+            mb: 1,
+            color: "#1a1a1a"
+          }}
+        >
+          🛍️ Checkout
+        </Typography>
+        <Typography 
+          variant="body1" 
+          color="textSecondary"
+          sx={{ fontSize: "1.1rem" }}
+        >
+          Complete your purchase in 2 easy steps
+        </Typography>
+      </Box>
+
+      {/* PROGRESS INDICATOR */}
+      <Stepper 
+        activeStep={0} 
+        sx={{ mb: 4 }}
+      >
+        <Step completed>
+          <StepLabel>Shipping Address</StepLabel>
+        </Step>
+        <Step>
+          <StepLabel>Payment</StepLabel>
+        </Step>
+      </Stepper>
 
       <Grid container spacing={3}>
-        {/* LEFT - ADDRESS */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 2 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Shipping Address
-              </Typography>
+        {/* LEFT - ADDRESS FORM */}
+        <Grid item xs={12} md={7}>
+          <Card sx={{ 
+            borderRadius: 2,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              {/* SHIPPING SECTION */}
+              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                <LocalShipping sx={{ mr: 1.5, color: "#1976d2", fontSize: "1.8rem" }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+                  Shipping Address
+                </Typography>
+              </Box>
 
               <TextField
-                multiline
-                rows={4}
+                label="Full Name"
                 fullWidth
-                placeholder="Enter full delivery address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                variant="outlined"
+                placeholder="John Doe"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                error={!!errors.fullName}
+                helperText={errors.fullName}
+                sx={{ mb: 2 }}
+              />
+
+              <TextField
+                label="Phone Number"
+                fullWidth
+                variant="outlined"
+                placeholder="9876543210"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                error={!!errors.phoneNumber}
+                helperText={errors.phoneNumber}
+                sx={{ mb: 2 }}
+              />
+
+              <TextField
+                label="Street Address"
+                fullWidth
+                variant="outlined"
+                placeholder="123 Main St, Apt 4B"
+                name="streetAddress"
+                value={formData.streetAddress}
+                onChange={handleInputChange}
+                error={!!errors.streetAddress}
+                helperText={errors.streetAddress}
+                sx={{ mb: 2 }}
+              />
+
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="City"
+                    fullWidth
+                    variant="outlined"
+                    placeholder="New York"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    error={!!errors.city}
+                    helperText={errors.city}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="State"
+                    fullWidth
+                    variant="outlined"
+                    placeholder="NY"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    error={!!errors.state}
+                    helperText={errors.state}
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Postal Code"
+                    fullWidth
+                    variant="outlined"
+                    placeholder="10001"
+                    name="postalCode"
+                    value={formData.postalCode}
+                    onChange={handleInputChange}
+                    error={!!errors.postalCode}
+                    helperText={errors.postalCode}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Country"
+                    fullWidth
+                    variant="outlined"
+                    placeholder="United States"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    error={!!errors.country}
+                    helperText={errors.country}
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* DELIVERY INSTRUCTIONS */}
+              <TextField
+                label="Delivery Instructions (Optional)"
+                fullWidth
+                multiline
+                rows={3}
+                variant="outlined"
+                placeholder="Leave at door, call on arrival, etc."
+                name="deliveryInstructions"
+                value={formData.deliveryInstructions}
+                onChange={handleInputChange}
               />
             </CardContent>
           </Card>
         </Grid>
 
         {/* RIGHT - ORDER SUMMARY */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 2 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Order Summary
-              </Typography>
-
-              {cartItems.map((item) => (
-                <Box
-                  key={item.productId}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body2">
-                    {item.productName} × {item.quantity}
-                  </Typography>
-                  <Typography variant="body2">
-                    ₹ {(item.price * item.quantity).toLocaleString()}
-                  </Typography>
-                </Box>
-              ))}
-
-              <Divider sx={{ my: 2 }} />
-
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontWeight: 700,
-                }}
-              >
-                <Typography>Total</Typography>
-                <Typography>₹ {totalAmount.toLocaleString()}</Typography>
+        <Grid item xs={12} md={5}>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 2,
+              backgroundColor: "#f9f9f9",
+              border: "1px solid #e0e0e0",
+              position: "sticky",
+              top: 20,
+            }}
+          >
+            {/* ORDER ITEMS */}
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <ShoppingBag sx={{ mr: 1, color: "#1976d2" }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+                  Order Summary
+                </Typography>
               </Box>
 
-              <Button
-                variant="contained"
-                fullWidth
-                sx={{ mt: 3, py: 1.4, fontWeight: 600 }}
-                disabled={cartItems.length === 0}
-                onClick={handleProceed}
+              <Box sx={{ 
+                backgroundColor: "#fff",
+                p: 2,
+                borderRadius: 1,
+                mb: 2,
+                maxHeight: "300px",
+                overflowY: "auto"
+              }}>
+                {cartItems.length === 0 ? (
+                  <Typography color="textSecondary" sx={{ textAlign: "center", py: 2 }}>
+                    No items in cart
+                  </Typography>
+                ) : (
+                  cartItems.map((item) => (
+                    <Box
+                      key={item.productId}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        pb: 1.5,
+                        mb: 1.5,
+                        borderBottom: "1px solid #eee",
+                        "&:last-child": {
+                          borderBottom: "none",
+                          mb: 0,
+                          pb: 0,
+                        }
+                      }}
+                    >
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          {item.productName}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          Qty: {item.quantity}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: "#1976d2" }}>
+                        ₹ {(item.price * item.quantity).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* PRICE BREAKDOWN */}
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+                <Typography fontWeight={600}>
+                  ₹ {totalAmount.toLocaleString()}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+                <Typography color="textSecondary">Shipping</Typography>
+                <Typography fontWeight={600} color="success.main">
+                  Free
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+                <Typography color="textSecondary">Taxes</Typography>
+                <Typography fontWeight={600} color="textSecondary">
+                  Calculated at payment
+                </Typography>
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* TOTAL */}
+            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+                Total Amount
+              </Typography>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: "#1976d2",
+                }}
               >
-                Place Order
-              </Button>
-            </CardContent>
-          </Card>
+                ₹ {totalAmount.toLocaleString()}
+              </Typography>
+            </Box>
+
+            {/* PROCEED BUTTON */}
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              disabled={cartItems.length === 0 || loading}
+              onClick={handleProceed}
+              sx={{
+                py: 1.8,
+                fontWeight: 700,
+                fontSize: "1.1rem",
+                borderRadius: 1.5,
+                mb: 1.5,
+                background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                textTransform: "none",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #1565c0 0%, #1565c0 100%)",
+                },
+                "&:disabled": {
+                  background: "#ccc",
+                }
+              }}
+              startIcon={<CreditCard />}
+            >
+              {loading ? "Processing..." : "Place Order"}
+            </Button>
+
+            {/* BACK BUTTON */}
+            <Button
+              variant="outlined"
+              fullWidth
+              size="large"
+              onClick={() => navigate("/carts")}
+              sx={{
+                py: 1.5,
+                fontWeight: 600,
+                borderRadius: 1.5,
+                textTransform: "none",
+              }}
+            >
+              Back to Cart
+            </Button>
+
+            {/* SECURITY INFO */}
+            <Paper
+              sx={{
+                p: 2,
+                mt: 2.5,
+                backgroundColor: "#e8f5e9",
+                border: "1px solid #81c784",
+                borderRadius: 1,
+              }}
+            >
+              <Typography 
+                variant="body2"
+                sx={{ color: "#2e7d32", lineHeight: 1.6, fontSize: "0.95rem" }}
+              >
+                ✓ Secure checkout<br/>
+                ✓ Your data is encrypted<br/>
+                ✓ Easy returns available
+              </Typography>
+            </Paper>
+          </Paper>
         </Grid>
       </Grid>
     </Container>

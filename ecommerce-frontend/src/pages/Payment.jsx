@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import api from "../api/axios";
+import { orderService, paymentService, cartService } from "../api/services";
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -33,35 +33,29 @@ const Payment = () => {
     try {
       setLoading(true);
 
-      // Step 1: Create order via /orders/checkout
-      const orderRes = await api.post("/orders/checkout", {
-        shippingAddress,
-      });
+      // Step 1: Create order via checkout endpoint
+      const orderRes = await orderService.checkout(shippingAddress);
 
       if (orderRes.data && orderRes.data.orderId) {
         const orderId = orderRes.data.orderId;
 
         // Step 2: Initiate payment for the created order
-        const paymentInitRes = await api.post("/payments/initiate", null, {
-          params: { orderId },
-        });
+        const paymentInitRes = await paymentService.initiatePayment(orderId);
 
         if (paymentInitRes.data && paymentInitRes.data.paymentReference) {
           const paymentRef = paymentInitRes.data.paymentReference;
 
           // Step 3: Mark payment as success
-          await api.post("/payments/success", null, {
-            params: { paymentRef },
-          });
+          await paymentService.markPaymentSuccess(paymentRef);
 
           // Step 4: Clear cart after successful order
           try {
             // Get all cart items and delete them
-            const cartRes = await api.get("/cart");
+            const cartRes = await cartService.getCart();
             const cartItems = cartRes.data;
             if (Array.isArray(cartItems)) {
               for (const item of cartItems) {
-                await api.delete(`/cart/${item.productId}`);
+                await cartService.removeFromCart(item.productId);
               }
             }
           } catch (cartErr) {

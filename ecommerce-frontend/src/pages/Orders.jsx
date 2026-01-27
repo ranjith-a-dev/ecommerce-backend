@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { orderService } from "../api/services";
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ const Orders = () => {
       if (filter) {
         params.status = filter;
       }
-      const res = await api.get("/orders", { params });
+      const res = await orderService.getMyOrders(params);
       // Handle both paginated response (res.data.content) and direct array response
       const orderData = res.data?.content || res.data || [];
       console.log("Order response:", res.data); // Debug log
@@ -48,6 +48,7 @@ const Orders = () => {
 
   useEffect(() => {
     fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const getStatusColor = (status) => {
@@ -72,7 +73,7 @@ const Orders = () => {
   const handleCancelOrder = async (orderId) => {
     if (window.confirm("Are you sure you want to cancel this order?")) {
       try {
-        await api.post(`/orders/${orderId}/cancel`);
+        await orderService.cancelOrder(orderId);
         alert("Order cancelled successfully");
         fetchOrders();
       } catch (err) {
@@ -84,7 +85,7 @@ const Orders = () => {
   const handleRefundRequest = async (orderId) => {
     if (window.confirm("Request refund for this order?")) {
       try {
-        await api.post(`/orders/${orderId}/refund-request`);
+        await orderService.requestRefund(orderId);
         alert("Refund request submitted successfully");
         fetchOrders();
       } catch (err) {
@@ -195,41 +196,19 @@ const Orders = () => {
 
                   <Divider sx={{ my: 2 }} />
 
-                  {/* ORDER ITEMS TABLE */}
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                          <TableCell>Product</TableCell>
-                          <TableCell align="right">Quantity</TableCell>
-                          <TableCell align="right">Price</TableCell>
-                          <TableCell align="right">Total</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {Array.isArray(order.items) && order.items.length > 0 ? (
-                          order.items.map((item) => (
-                            <TableRow key={item.productId}>
-                              <TableCell>{item.productName}</TableCell>
-                              <TableCell align="right">{item.quantity}</TableCell>
-                              <TableCell align="right">
-                                ₹ {typeof item.price === 'number' ? item.price.toLocaleString() : item.price}
-                              </TableCell>
-                              <TableCell align="right">
-                                ₹ {typeof item.itemTotal === 'number' ? item.itemTotal.toLocaleString() : item.itemTotal}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={4} align="center">
-                              No items in this order
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                  {/* ORDER SUMMARY */}
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography color="textSecondary">Total Items:</Typography>
+                      <Typography fontWeight={600}>{order.totalItems}</Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography color="textSecondary">Order Amount:</Typography>
+                      <Typography fontWeight={600}>
+                        ₹ {typeof order.totalAmount === 'number' ? order.totalAmount.toLocaleString() : order.totalAmount}
+                      </Typography>
+                    </Box>
+                  </Box>
 
                   {/* ORDER FOOTER */}
                   <Box
@@ -240,14 +219,14 @@ const Orders = () => {
                       mt: 2,
                     }}
                   >
-                    <Typography variant="h6" fontWeight={700}>
-                      Total: ₹ {order.totalAmount.toLocaleString()}
+                    <Typography variant="body2" color="textSecondary">
+                      Order placed on {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </Typography>
 
                     {/* ACTION BUTTONS */}
                     <Box sx={{ display: "flex", gap: 1 }}>
                       <Button
-                        variant="outlined"
+                        variant="contained"
                         size="small"
                         onClick={() => navigate(`/orders/${order.orderId}`)}
                       >
