@@ -48,7 +48,7 @@ public class OrderController {
 
         User user = userRepo.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(user,request.getShippingAddress()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(user, request));
     }
     
     @GetMapping

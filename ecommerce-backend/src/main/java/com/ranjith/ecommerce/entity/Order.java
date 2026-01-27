@@ -52,8 +52,8 @@ public class Order {
     @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL)
     private List<OrderItem> OrderItems;
 
-    @Column(nullable = false , length = 500)
-    private String shippingAddress;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<ShippingAddress> shippingAddresses;
 
     @Column(nullable = false)
     private boolean refundRequested;

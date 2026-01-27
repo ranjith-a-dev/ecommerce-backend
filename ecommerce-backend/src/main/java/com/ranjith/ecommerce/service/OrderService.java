@@ -13,12 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ranjith.ecommerce.dto.AdminOrderSummaryDTO;
 import com.ranjith.ecommerce.dto.OrderDetailDTO;
 import com.ranjith.ecommerce.dto.OrderItemResponseDTO;
+import com.ranjith.ecommerce.dto.OrderRequestDTO;
+import com.ranjith.ecommerce.dto.ShippingAddressDTO;
 import com.ranjith.ecommerce.dto.UserOrderSummaryDTO;
 import com.ranjith.ecommerce.entity.Cart;
 import com.ranjith.ecommerce.entity.CartItem;
 import com.ranjith.ecommerce.entity.Order;
 import com.ranjith.ecommerce.entity.OrderItem;
 import com.ranjith.ecommerce.entity.Product;
+import com.ranjith.ecommerce.entity.ShippingAddress;
 import com.ranjith.ecommerce.entity.User;
 import com.ranjith.ecommerce.enums.OrderStatus;
 import com.ranjith.ecommerce.exception.CannotCancelOrderException;
@@ -29,6 +32,7 @@ import com.ranjith.ecommerce.exception.UnauthorizedUserException;
 import com.ranjith.ecommerce.repository.OrderItemRepo;
 import com.ranjith.ecommerce.repository.OrderRepo;
 import com.ranjith.ecommerce.repository.ProductRepo;
+import com.ranjith.ecommerce.repository.ShippingAddressRepo;
 import com.ranjith.ecommerce.validation.OrderStatusValidator;
 
 @Service
@@ -39,6 +43,9 @@ public class OrderService {
 
     @Autowired
     private OrderItemRepo orderItemRepo;
+
+    @Autowired
+    private ShippingAddressRepo shippingAddressRepo;
 
     @Autowired
     private ProductRepo productRepo;
@@ -53,7 +60,7 @@ public class OrderService {
     private OrderStatusValidator orderStatusValidator;
 
     @Transactional
-    public OrderDetailDTO placeOrder(User user,String shippingAddress) {
+    public OrderDetailDTO placeOrder(User user, OrderRequestDTO orderRequest) {
 
         Cart cart = cartService.getOrCreateCartForCurrentUser();
         List<CartItem> cartItems = cartItemService.getCartItems(cart);
@@ -64,7 +71,6 @@ public class OrderService {
 
         Order order = new Order();
         order.setUser(user);
-        order.setShippingAddress(shippingAddress);
         order.setStatus(OrderStatus.CREATED);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -100,6 +106,20 @@ public class OrderService {
 
         Order savedOrder = orderRepo.save(order);
         orderItemRepo.saveAll(orderItems);
+
+        // Save shipping address
+        ShippingAddress shippingAddress = new ShippingAddress();
+        ShippingAddressDTO addressDTO = orderRequest.getShippingAddress();
+        shippingAddress.setOrder(savedOrder);
+        shippingAddress.setFullName(addressDTO.getFullName());
+        shippingAddress.setPhoneNumber(addressDTO.getPhoneNumber());
+        shippingAddress.setStreetAddress(addressDTO.getStreetAddress());
+        shippingAddress.setCity(addressDTO.getCity());
+        shippingAddress.setState(addressDTO.getState());
+        shippingAddress.setPostalCode(addressDTO.getPostalCode());
+        shippingAddress.setCountry(addressDTO.getCountry());
+        shippingAddress.setDeliveryInstructions(addressDTO.getDeliveryInstructions());
+        shippingAddressRepo.save(shippingAddress);
 
         cartItemService.clearCart(cart);
 
