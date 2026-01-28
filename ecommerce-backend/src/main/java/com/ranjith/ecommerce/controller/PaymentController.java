@@ -26,7 +26,7 @@ import com.ranjith.ecommerce.repository.UserRepo;
 import com.ranjith.ecommerce.service.PaymentService;
 
 @RestController
-@RequestMapping("/payments")
+@RequestMapping("/api/payments")
 public class PaymentController {
 
     @Autowired
@@ -36,7 +36,7 @@ public class PaymentController {
     UserRepo userRepo;
 
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<PaymentResponseDTO>> getPayments(
         @AuthenticationPrincipal UserDetails userDetails,
         @RequestParam(required = false) PaymentStatus status,
@@ -51,7 +51,18 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPayments(user,status,minAmount,maxAmount, pageable));
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @GetMapping("/order/{orderId}")
+    public ResponseEntity<PaymentResponseDTO> getPaymentByOrderId(
+        @PathVariable Long orderId,
+        @AuthenticationPrincipal UserDetails userDetails){
+
+        User user = userRepo.findByUsername(userDetails.getUsername())
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId, user));
+    }
+
     @PostMapping("/initiate")
     public ResponseEntity<PaymentResponseDTO> initiatePayment(@RequestParam Long orderId,
         @AuthenticationPrincipal UserDetails userDetails){
@@ -64,14 +75,14 @@ public class PaymentController {
     }
 
     @PostMapping("/success")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ApiResponseDTO> markPaymentSuccess(@RequestParam String paymentRef){
         paymentService.markPaymentSuccess(paymentRef);
         return ResponseEntity.ok(new ApiResponseDTO("Payment marked as success"));
     }
 
     @PostMapping("/failure")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ApiResponseDTO> markPaymentFailure(@RequestParam String paymentRef){
         paymentService.markPaymentFailure(paymentRef);
         return ResponseEntity.ok(new ApiResponseDTO("Payment marked as failed"));

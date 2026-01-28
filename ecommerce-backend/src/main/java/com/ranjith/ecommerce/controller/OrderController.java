@@ -30,7 +30,7 @@ import com.ranjith.ecommerce.service.OrderService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/orders")
 public class OrderController {
 
     @Autowired
@@ -40,7 +40,7 @@ public class OrderController {
     UserRepo userRepo;
 
     @PostMapping("/checkout")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<OrderDetailDTO> checkout(
         @AuthenticationPrincipal UserDetails userDetails,
         @Valid @RequestBody OrderRequestDTO request
@@ -52,7 +52,7 @@ public class OrderController {
     }
     
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<UserOrderSummaryDTO>> getMyOrders(
         @AuthenticationPrincipal UserDetails userDetails,
         @RequestParam(required = false) OrderStatus status,
@@ -67,7 +67,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<OrderDetailDTO> getOrderById(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
@@ -76,7 +76,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<UserOrderSummaryDTO> cancelOrder(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())
@@ -86,7 +86,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/refund-request")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<UserOrderSummaryDTO> refundRequest(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
 
         User user = userRepo.findByUsername(userDetails.getUsername())

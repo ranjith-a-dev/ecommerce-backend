@@ -32,7 +32,6 @@ import com.ranjith.ecommerce.exception.UnauthorizedUserException;
 import com.ranjith.ecommerce.repository.OrderItemRepo;
 import com.ranjith.ecommerce.repository.OrderRepo;
 import com.ranjith.ecommerce.repository.ProductRepo;
-import com.ranjith.ecommerce.repository.ShippingAddressRepo;
 import com.ranjith.ecommerce.validation.OrderStatusValidator;
 
 @Service
@@ -43,9 +42,6 @@ public class OrderService {
 
     @Autowired
     private OrderItemRepo orderItemRepo;
-
-    @Autowired
-    private ShippingAddressRepo shippingAddressRepo;
 
     @Autowired
     private ProductRepo productRepo;
@@ -72,6 +68,7 @@ public class OrderService {
         Order order = new Order();
         order.setUser(user);
         order.setStatus(OrderStatus.CREATED);
+        order.setRefundRequested(false);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
@@ -104,13 +101,10 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         order.setOrderItems(orderItems);
 
-        Order savedOrder = orderRepo.save(order);
-        orderItemRepo.saveAll(orderItems);
-
-        // Save shipping address
+        // Create shipping address - it will be linked via order_id
         ShippingAddress shippingAddress = new ShippingAddress();
         ShippingAddressDTO addressDTO = orderRequest.getShippingAddress();
-        shippingAddress.setOrder(savedOrder);
+        shippingAddress.setOrder(order); // Set the order reference
         shippingAddress.setFullName(addressDTO.getFullName());
         shippingAddress.setPhoneNumber(addressDTO.getPhoneNumber());
         shippingAddress.setStreetAddress(addressDTO.getStreetAddress());
@@ -119,7 +113,14 @@ public class OrderService {
         shippingAddress.setPostalCode(addressDTO.getPostalCode());
         shippingAddress.setCountry(addressDTO.getCountry());
         shippingAddress.setDeliveryInstructions(addressDTO.getDeliveryInstructions());
-        shippingAddressRepo.save(shippingAddress);
+        
+        // Add to shipping addresses list
+        List<ShippingAddress> addresses = new ArrayList<>();
+        addresses.add(shippingAddress);
+        order.setShippingAddresses(addresses);
+
+        Order savedOrder = orderRepo.save(order);
+        orderItemRepo.saveAll(orderItems);
 
         cartItemService.clearCart(cart);
 
@@ -163,6 +164,12 @@ public class OrderService {
                 .map(this::mapToAdminSummaryDto);
     }
 
+    public AdminOrderSummaryDTO getAdminOrderById(Long orderId) {
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        return mapToAdminSummaryDto(order);
+    }
+
     @Transactional
     public UserOrderSummaryDTO cancelOrder(Long orderId, User user) {
 
@@ -195,6 +202,15 @@ public class OrderService {
 
         orderStatusValidator.validateStatusTransition(order.getStatus(), newStatus);
 
+        // Restore stock when refund is approved
+        if (newStatus == OrderStatus.REFUNDED && order.getStatus() == OrderStatus.REFUND_INITIATED) {
+            for (OrderItem item : order.getOrderItems()) {
+                Product product = item.getProduct();
+                product.setStock(product.getStock() + item.getQuantity());
+                productRepo.save(product);
+            }
+        }
+
         order.setStatus(newStatus);
         return mapToUserSummaryDto(orderRepo.save(order));
     }
@@ -209,8 +225,8 @@ public class OrderService {
             throw new CannotCancelOrderException("This is not your order");
         }
 
-        if (order.getStatus() != OrderStatus.PAID) {
-            throw new IllegalStateException("Refund allowed only for PAID orders");
+        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.DELIVERED) {
+            throw new CannotCancelOrderException("Refund allowed only for PAID or DELIVERED orders");
         }
 
         order.setRefundRequested(true);

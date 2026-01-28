@@ -2,6 +2,7 @@ package com.ranjith.ecommerce.service;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -56,10 +57,16 @@ public class PaymentService {
         
         Order order = orderRepo.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-        
+
         if(!order.getUser().getId().equals(user.getId()))
             throw new UnauthorizedUserException("You are not authorized to pay this order");
-        
+
+        // If payment already exists for this order, return it (idempotent)
+        Optional<Payment> existingPaymentOpt = paymentRepo.findByOrder(order);
+        if (existingPaymentOpt.isPresent()) {
+            return mapToPaymentResponseDTO(existingPaymentOpt.get());
+        }
+
         if(order.getStatus() != OrderStatus.CREATED)
             throw new IllegalStateException("Payment already initiated or order closed");
 
@@ -84,18 +91,28 @@ public class PaymentService {
 
         Payment payment = paymentRepo.findByPaymentReference(paymentRef)
             .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
-        
-        if(payment.getStatus() != PaymentStatus.INITIATED)
-            throw new IllegalStateException("Payment already processed");
+
+        // If already successful, do nothing (idempotent)
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return;
+        }
+            // Allow transition from INITIATED or FAILED
+            if (payment.getStatus() != PaymentStatus.INITIATED && payment.getStatus() != PaymentStatus.FAILED) {
+                throw new IllegalStateException("Payment already processed");
+            }
 
         payment.setStatus(PaymentStatus.SUCCESS);
 
         Order order = payment.getOrder();
 
-        orderStatusValidator.validateStatusTransition(order.getStatus(),OrderStatus.PAID);
+        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.PAID);
 
         // Stock is already deducted in OrderService.placeOrder(), no need to deduct again
         order.setStatus(OrderStatus.PAID);
+
+        // Explicitly save to ensure changes are persisted
+        paymentRepo.save(payment);
+        orderRepo.save(order);
     }
 
     @Transactional
@@ -111,8 +128,11 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.FAILED);
 
         Order order = payment.getOrder();
-        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);   
-        order.setStatus(OrderStatus.CANCELLED); 
+        // Keep order in PAYMENT_PENDING state so user can retry payment
+        // Do not change order status to CANCELLED
+        
+        paymentRepo.save(payment);
+        orderRepo.save(order);
     }
 
     @Transactional
@@ -162,14 +182,28 @@ public class PaymentService {
         }
     }
 
-    public PaymentResponseDTO mapToPaymentResponseDTO(Payment payment){
+    @Transactional
+    public PaymentResponseDTO getPaymentByOrderId(Long orderId, User user){
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        
+        if(!order.getUser().getId().equals(user.getId()))
+            throw new UnauthorizedUserException("You are not authorized to access this payment");
+        
+        Payment payment = paymentRepo.findByOrder(order)
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found for this order"));
+        
+        return mapToPaymentResponseDTO(payment);
+    }
 
-        return new PaymentResponseDTO(
-            payment.getPaymentReference(),
-            payment.getStatus(),
-            payment.getAmount(),
-            payment.getOrder().getId(),
-            payment.getCreatedAt()
-        );
+    private PaymentResponseDTO mapToPaymentResponseDTO(Payment payment) {
+        PaymentResponseDTO dto = new PaymentResponseDTO();
+        dto.setOrderId(payment.getOrder().getId());
+        dto.setAmount(payment.getAmount());
+        dto.setStatus(payment.getStatus());
+        dto.setPaymentReference(payment.getPaymentReference());
+        dto.setCreatedAt(payment.getCreatedAt());
+        dto.setUpdatedAt(payment.getUpdatedAt());
+        return dto;
     }
 }

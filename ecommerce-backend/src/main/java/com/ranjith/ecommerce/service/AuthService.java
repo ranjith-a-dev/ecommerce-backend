@@ -1,5 +1,7 @@
 package com.ranjith.ecommerce.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -45,7 +47,8 @@ public class AuthService {
         if(!passwordEncoder.matches(dto.getPassword(), user.getPassword()))
             throw new PasswordMismatchException("Invalid Credentials");
         
-        return jwtUtil.generateToken(dto.getUsername());
+        List<String> authorities = List.of("ROLE_" + user.getRole().toString());
+        return jwtUtil.generateToken(dto.getUsername(), authorities);
     }
 
 

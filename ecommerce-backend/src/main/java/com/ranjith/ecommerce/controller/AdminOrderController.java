@@ -43,6 +43,17 @@ public class AdminOrderController {
     ){
         return ResponseEntity.ok(orderService.getAllOrders(userId,status,minTotalAmount,maxTotalAmount,refundRequested,pageable));
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/{orderId}")
+    public ResponseEntity<AdminOrderSummaryDTO> getOrderById(
+        @PathVariable
+        @NotNull(message = "Order ID is required")
+        @Positive(message = "Order ID must be positive")
+        Long orderId
+    ){
+        return ResponseEntity.ok(orderService.getAdminOrderById(orderId));
+    }
     
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{orderId}/status")

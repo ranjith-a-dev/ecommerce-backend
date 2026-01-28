@@ -31,13 +31,17 @@ public class OrderStatusValidator {
                     throw new IllegalStateException("Invalid order status transition");
                 break;
             
+            case DELIVERED:
+                if(next != OrderStatus.REFUND_INITIATED)
+                    throw new IllegalStateException("Only refund initiation allowed for delivered orders");
+                break;
+            
             case REFUND_INITIATED:
                 if(next != OrderStatus.REFUNDED)
                     throw new IllegalStateException("Invalid order status transition");
                 break;
             
             case CANCELLED:
-            case DELIVERED:
             case REFUNDED:
                 throw new IllegalStateException("Order is already closed");
             
