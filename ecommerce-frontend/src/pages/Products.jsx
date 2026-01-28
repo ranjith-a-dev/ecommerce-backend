@@ -40,7 +40,9 @@ const Products = () => {
       const res = await cartService.getCart();
       setCartItems(res.data);
     }
-    catch{
+    catch(error){
+      // Silently handle cart fetch errors - just set empty cart
+      console.debug("Cart fetch error (expected for some users):", error.response?.status);
       setCartItems([]);
     }
   }
@@ -140,6 +142,7 @@ const Products = () => {
                 product={product}
                 cartItems={cartItems}
                 refreshCart={fetchCarts}
+                refreshProducts={() => fetchProducts(page)}
               />
             </Box>
           </Grid>

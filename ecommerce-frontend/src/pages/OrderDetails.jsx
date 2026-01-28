@@ -6,13 +6,15 @@ import {
   Divider,
   Box,
   Chip,
+  Button,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { orderService } from "../api/services";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
@@ -33,6 +35,17 @@ const OrderDetails = () => {
     return <Typography sx={{ mt: 4 }}>Loading...</Typography>;
   }
 
+  const handleRetryPayment = () => {
+    navigate("/payment", {
+      state: {
+        cartItems: order.items,
+        totalAmount: order.totalAmount,
+        shippingAddress: order.shippingAddress,
+        orderId: order.orderId,
+      },
+    });
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h4" fontWeight={600} gutterBottom>
@@ -41,7 +54,7 @@ const OrderDetails = () => {
 
       <Card>
         <CardContent>
-          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Typography fontWeight={600}>
               Order ID: {order.orderId}
             </Typography>
@@ -73,6 +86,19 @@ const OrderDetails = () => {
           <Typography variant="h6">
             Total Amount: ₹ {order.totalAmount}
           </Typography>
+
+          {/* RETRY PAYMENT BUTTON - Show only if order is in PAYMENT_PENDING state */}
+          {order.status === "PAYMENT_PENDING" && (
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleRetryPayment}
+              >
+                Retry Payment
+              </Button>
+            </Box>
+          )}
         </CardContent>
       </Card>
     </Container>

@@ -33,8 +33,16 @@ api.interceptors.response.use(
             window.location.href = "/login";
         }
 
-        if(status === 403)
-            alert("You are not authorized to access this resource");
+        if(status === 403) {
+            console.error("403 Forbidden Error:", {
+                url: error.config?.url,
+                method: error.config?.method,
+                status: status,
+                message: message,
+                fullError: error.response?.data
+            });
+            // Don't show alert, just log it
+        }
         
         console.error("API Error:", message);
 

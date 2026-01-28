@@ -75,6 +75,18 @@ const Checkout = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const isFormValid = () => {
+    return (
+      formData.fullName.trim() &&
+      formData.phoneNumber.trim() &&
+      formData.streetAddress.trim() &&
+      formData.city.trim() &&
+      formData.state.trim() &&
+      formData.postalCode.trim() &&
+      formData.country.trim()
+    );
+  };
+
   const handleProceed = async () => {
     if (!validateForm()) {
       alert("Please fill all required fields");
@@ -83,15 +95,41 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      await orderService.checkout({
-        shippingAddress: formData,
+      // Trim all fields before sending
+      const trimmedFormData = {
+        fullName: formData.fullName.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        streetAddress: formData.streetAddress.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        postalCode: formData.postalCode.trim(),
+        country: formData.country.trim(),
+        deliveryInstructions: formData.deliveryInstructions.trim(),
+      };
+
+      console.log("Sending order with data:", trimmedFormData);
+
+      const orderResponse = await orderService.checkout({
+        shippingAddress: trimmedFormData,
       });
       alert("Order placed successfully!");
-      navigate("/orders");
+      navigate("/payment", { 
+        state: { 
+          cartItems, 
+          totalAmount, 
+          shippingAddress: trimmedFormData,
+          orderId: orderResponse.data?.orderId
+        } 
+      });
     } catch (error) {
-      alert(
-        error.response?.data?.message || "Failed to place order. Please try again."
-      );
+      console.error("Checkout error details:", {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        data: error.response?.data,
+        error: error.message
+      });
+      const errorMessage = error.response?.data?.message || error.message || "Failed to place order. Please try again.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -259,6 +297,7 @@ return (
                 name="deliveryInstructions"
                 value={formData.deliveryInstructions}
                 onChange={handleInputChange}
+                sx={{ mb: 2 }}
               />
             </CardContent>
           </Card>
@@ -380,7 +419,7 @@ return (
               variant="contained"
               fullWidth
               size="large"
-              disabled={cartItems.length === 0 || loading}
+              disabled={!isFormValid() || cartItems.length === 0 || loading}
               onClick={handleProceed}
               sx={{
                 py: 1.8,
