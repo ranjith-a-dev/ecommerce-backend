@@ -32,6 +32,29 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
+    // User cancellation endpoint
+    @PostMapping("/{orderId}/user-cancel")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<?> cancelOrderByUser(@PathVariable Long orderId, @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            orderService.cancelOrderByUser(orderId, userDetails.getUsername());
+            return ResponseEntity.ok("Order cancelled successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Admin cancellation endpoint
+    @PostMapping("/admin/{orderId}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> cancelOrderByAdmin(@PathVariable Long orderId, @RequestParam String cancelReason) {
+        try {
+            orderService.cancelOrderByAdmin(orderId, cancelReason);
+            return ResponseEntity.ok("Order cancelled by admin successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @Autowired
     OrderService orderService;

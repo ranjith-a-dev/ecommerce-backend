@@ -36,6 +36,61 @@ import com.ranjith.ecommerce.validation.OrderStatusValidator;
 
 @Service
 public class OrderService {
+    // Helper method for status validation
+    private void validateUserCancellationAllowed(Order order) {
+        OrderStatus status = order.getStatus();
+        if (status == OrderStatus.SHIPPED || status == OrderStatus.DELIVERED ||
+            status == OrderStatus.CANCELLED || status == OrderStatus.REFUND_INITIATED ||
+            status == OrderStatus.REFUNDED) {
+            throw new CannotCancelOrderException("Order cannot be cancelled in current status: " + status);
+        }
+    }
+
+    private void validateAdminCancellationAllowed(Order order) {
+        OrderStatus status = order.getStatus();
+        if (status == OrderStatus.DELIVERED || status == OrderStatus.REFUNDED) {
+            throw new CannotCancelOrderException("Admin cannot cancel order in status: " + status);
+        }
+    }
+
+    @Transactional
+    public void cancelOrderByUser(Long orderId, String username) {
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        if (!order.getUser().getUsername().equals(username)) {
+            throw new UnauthorizedUserException("User not authorized to cancel this order");
+        }
+
+        validateUserCancellationAllowed(order);
+
+        if (order.getStatus() == OrderStatus.CREATED || order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+            order.setStatus(OrderStatus.CANCELLED);
+        } else if (order.getStatus() == OrderStatus.PAID) {
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setStatus(OrderStatus.REFUND_INITIATED);
+            // Optionally, trigger refund logic here
+        }
+        orderRepo.save(order);
+    }
+
+    @Transactional
+    public void cancelOrderByAdmin(Long orderId, String cancelReason) {
+        Order order = orderRepo.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        validateAdminCancellationAllowed(order);
+
+        if (order.getStatus() == OrderStatus.CREATED || order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+            order.setStatus(OrderStatus.CANCELLED);
+        } else if (order.getStatus() == OrderStatus.PAID) {
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setStatus(OrderStatus.REFUND_INITIATED);
+            // Optionally, trigger refund logic here
+        }
+        // Optionally, save cancelReason somewhere (e.g., order.setCancelReason(cancelReason))
+        orderRepo.save(order);
+    }
 
     @Autowired
     private OrderRepo orderRepo;
