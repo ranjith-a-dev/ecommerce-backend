@@ -109,12 +109,12 @@ const Payment = () => {
         // Try to initiate payment (first attempt)
         const paymentInitRes = await paymentService.initiatePayment(orderId);
         paymentRef = paymentInitRes.data?.paymentReference;
-      } catch (err) {
+      } catch {
         // If payment already initiated, fetch the existing payment using the new endpoint
         try {
           const paymentRes = await paymentService.getPaymentByOrderId(orderId);
           paymentRef = paymentRes.data?.paymentReference;
-        } catch (fetchErr) {
+        } catch {
           throw new Error("Could not find payment to process");
         }
       }

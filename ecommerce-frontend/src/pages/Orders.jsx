@@ -53,7 +53,7 @@ const Orders = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "PENDING":
+      case "PAYMENTPENDING":
         return "warning";
       case "CONFIRMED":
         return "info";
@@ -118,16 +118,17 @@ const Orders = () => {
         </Button>
         <Button
           variant={filter === "PENDING" ? "contained" : "outlined"}
-          onClick={() => setFilter("PENDING")}
+          onClick={() => setFilter("PAYMENT_PENDING")}
         >
           Pending
         </Button>
         <Button
-          variant={filter === "CONFIRMED" ? "contained" : "outlined"}
-          onClick={() => setFilter("CONFIRMED")}
+          variant={filter === "CREATED" ? "contained" : "outlined"}
+          onClick={() => setFilter("CREATED")}
         >
-          Confirmed
+          Created
         </Button>
+        {/* Removed Confirmed filter as there is no CONFIRMED status */}
         <Button
           variant={filter === "SHIPPED" ? "contained" : "outlined"}
           onClick={() => setFilter("SHIPPED")}
@@ -145,6 +146,24 @@ const Orders = () => {
           onClick={() => setFilter("CANCELLED")}
         >
           Cancelled
+        </Button>
+        <Button
+          variant={filter === "PAID" ? "contained" : "outlined"}
+          onClick={() => setFilter("PAID")}
+        >
+          Paid
+        </Button>
+        <Button
+          variant={filter === "REFUND_INITIATED" ? "contained" : "outlined"}
+          onClick={() => setFilter("REFUND_INITIATED")}
+        >
+          Refund Initiated
+        </Button>
+        <Button
+          variant={filter === "REFUNDED" ? "contained" : "outlined"}
+          onClick={() => setFilter("REFUNDED")}
+        >
+          Refunded
         </Button>
       </Box>
 
@@ -233,7 +252,7 @@ const Orders = () => {
                         View Details
                       </Button>
 
-                      {order.status === "PENDING" && (
+                      {(order.status === "CREATED" || order.status === "PAYMENT_PENDING" || order.status === "PAID") && (
                         <Button
                           variant="outlined"
                           color="error"

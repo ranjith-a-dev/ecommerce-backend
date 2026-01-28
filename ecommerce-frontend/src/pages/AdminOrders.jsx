@@ -301,54 +301,103 @@ const AdminOrders = () => {
                 <Typography variant="body1">#{selectedOrder.orderId}</Typography>
               </Box>
 
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  <strong>User ID:</strong>
-                </Typography>
-                <Typography variant="body1">{selectedOrder.userId}</Typography>
-              </Box>
 
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  <strong>Total Amount:</strong>
-                </Typography>
-                <Typography variant="body1" sx={{ color: "#1976d2", fontWeight: 600 }}>
-                  ₹ {selectedOrder.totalAmount?.toLocaleString()}
-                </Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  <strong>Current Status:</strong>
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: getStatusColor(selectedOrder.status),
-                    fontWeight: 600,
-                  }}
-                >
-                  {selectedOrder.status}
-                </Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  <strong>Shipping Address:</strong>
-                </Typography>
-                <Typography variant="body1">{selectedOrder.shippingAddress}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  <strong>Order Date:</strong>
-                </Typography>
-                <Typography variant="body1">
-                  {selectedOrder.createdAt
-                    ? new Date(selectedOrder.createdAt).toLocaleString()
-                    : "N/A"}
-                </Typography>
-              </Box>
+              {/* Make all fields read-only if status is REFUNDED or CANCELLED */}
+              {(["REFUNDED", "CANCELLED"].includes(selectedOrder.status)) ? (
+                <Box sx={{ opacity: 0.6, pointerEvents: "none" }}>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>User ID:</strong>
+                    </Typography>
+                    <Typography variant="body1">{selectedOrder.userId}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Total Amount:</strong>
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: "#1976d2", fontWeight: 600 }}>
+                      ₹ {selectedOrder.totalAmount?.toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Current Status:</strong>
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: getStatusColor(selectedOrder.status),
+                        fontWeight: 600,
+                      }}
+                    >
+                      {selectedOrder.status}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Shipping Address:</strong>
+                    </Typography>
+                    <Typography variant="body1">{selectedOrder.shippingAddress}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Order Date:</strong>
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedOrder.createdAt
+                        ? new Date(selectedOrder.createdAt).toLocaleString()
+                        : "N/A"}
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>User ID:</strong>
+                    </Typography>
+                    <Typography variant="body1">{selectedOrder.userId}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Total Amount:</strong>
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: "#1976d2", fontWeight: 600 }}>
+                      ₹ {selectedOrder.totalAmount?.toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Current Status:</strong>
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: getStatusColor(selectedOrder.status),
+                        fontWeight: 600,
+                      }}
+                    >
+                      {selectedOrder.status}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Shipping Address:</strong>
+                    </Typography>
+                    <Typography variant="body1">{selectedOrder.shippingAddress}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Order Date:</strong>
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedOrder.createdAt
+                        ? new Date(selectedOrder.createdAt).toLocaleString()
+                        : "N/A"}
+                    </Typography>
+                  </Box>
+                </>
+              )}
 
               <Box
                 sx={{
@@ -385,16 +434,18 @@ const AdminOrders = () => {
                   Update Order Status:
                 </Typography>
                 <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {["CREATED", "PAYMENT_PENDING", "PAID", "SHIPPED", "DELIVERED", "CANCELLED", "REFUND_INITIATED", "REFUNDED"].map(
-                    (status) => (
+                  {["SHIPPED", "DELIVERED", "CANCELLED", "REFUND_INITIATED", "REFUNDED"].map((status) => {
+                    // Only allow REFUND_INITIATED if refundRequested is true
+                    const illegalRefund = status === "REFUND_INITIATED" && !selectedOrder.refundRequested;
+                    return (
                       <Button
                         key={status}
-                        variant={
-                          selectedOrder.status === status ? "contained" : "outlined"
-                        }
+                        variant={selectedOrder.status === status ? "contained" : "outlined"}
                         size="small"
                         onClick={() => handleUpdateStatus(selectedOrder.orderId, status)}
-                        disabled={updatingStatus || selectedOrder.status === status}
+                        disabled={
+                          ["REFUNDED", "CANCELLED"].includes(selectedOrder.status) || updatingStatus || illegalRefund
+                        }
                         sx={{
                           backgroundColor:
                             selectedOrder.status === status
@@ -413,17 +464,16 @@ const AdminOrders = () => {
                       >
                         {status}
                       </Button>
-                    )
-                  )}
+                    );
+                  })}
                 </Box>
-
-                {/* REFUND RECOMMENDATION */}
-                {selectedOrder.refundRequested && selectedOrder.status === "DELIVERED" && (
+                {/* Refund suggestion box */}
+                {selectedOrder && selectedOrder.refundRequested && (
                   <Box
                     sx={{
                       mt: 2,
                       p: 2,
-                      backgroundColor: "#e3f2fd",
+                      backgroundColor: "#f5f5f5",
                       borderRadius: 1,
                       borderLeft: `4px solid #1976d2`,
                     }}
