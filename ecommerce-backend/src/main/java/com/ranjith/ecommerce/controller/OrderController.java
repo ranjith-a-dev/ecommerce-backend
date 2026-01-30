@@ -10,13 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.ranjith.ecommerce.dto.OrderDetailDTO;
 import com.ranjith.ecommerce.dto.OrderRequestDTO;
@@ -32,89 +26,95 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
-    // User cancellation endpoint
-    @PostMapping("/{orderId}/user-cancel")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<?> cancelOrderByUser(@PathVariable Long orderId, @AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            orderService.cancelOrderByUser(orderId, userDetails.getUsername());
-            return ResponseEntity.ok("Order cancelled successfully");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    // Admin cancellation endpoint
-    @PostMapping("/admin/{orderId}/cancel")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> cancelOrderByAdmin(@PathVariable Long orderId, @RequestParam String cancelReason) {
-        try {
-            orderService.cancelOrderByAdmin(orderId, cancelReason);
-            return ResponseEntity.ok("Order cancelled by admin successfully");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 
     @Autowired
-    OrderService orderService;
+    private OrderService orderService;
 
     @Autowired
-    UserRepo userRepo;
+    private UserRepo userRepo;
+
+    /* ====================== CHECKOUT ====================== */
 
     @PostMapping("/checkout")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<OrderDetailDTO> checkout(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @Valid @RequestBody OrderRequestDTO request
-    ){
-
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody OrderRequestDTO request
+    ) {
         User user = userRepo.findByUsername(userDetails.getUsername())
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(user, request));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(orderService.placeOrder(user, request));
     }
-    
+
+    /* ====================== GET MY ORDERS ====================== */
+
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<UserOrderSummaryDTO>> getMyOrders(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @RequestParam(required = false) OrderStatus status,
-        @RequestParam(required = false) BigDecimal minTotalAmount,
-        @RequestParam(required = false) BigDecimal maxTotalAmount,
-        Pageable pageable
-    ){
-
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) BigDecimal minTotalAmount,
+            @RequestParam(required = false) BigDecimal maxTotalAmount,
+            Pageable pageable
+    ) {
         User user = userRepo.findByUsername(userDetails.getUsername())
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
-        return ResponseEntity.ok(orderService.getOrdersByUser(user.getId(),status,minTotalAmount,maxTotalAmount,pageable));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return ResponseEntity.ok(
+                orderService.getOrdersByUser(user.getId(), status, minTotalAmount, maxTotalAmount, pageable)
+        );
     }
+
+    /* ====================== GET ORDER DETAILS ====================== */
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<OrderDetailDTO> getOrderById(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
-
+    public ResponseEntity<OrderDetailDTO> getOrderById(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         User user = userRepo.findByUsername(userDetails.getUsername())
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
         return ResponseEntity.ok(orderService.getOrderById(orderId, user));
     }
 
+    /* ====================== CANCEL ORDER (USER) ====================== */
+
     @PostMapping("/{orderId}/cancel")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<UserOrderSummaryDTO> cancelOrder(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
-
+    public ResponseEntity<UserOrderSummaryDTO> cancelOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         User user = userRepo.findByUsername(userDetails.getUsername())
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
-    
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
         return ResponseEntity.ok(orderService.cancelOrder(orderId, user));
     }
 
+    /* ====================== REFUND REQUEST (USER) ====================== */
+
     @PostMapping("/{orderId}/refund-request")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<UserOrderSummaryDTO> refundRequest(@PathVariable Long orderId,@AuthenticationPrincipal UserDetails userDetails){
-
+    public ResponseEntity<UserOrderSummaryDTO> refundRequest(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         User user = userRepo.findByUsername(userDetails.getUsername())
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        return ResponseEntity.ok(orderService.refundRequest(orderId,user));
+        return ResponseEntity.ok(orderService.refundRequest(orderId, user));
+    }
+
+    /* ====================== ADMIN CANCEL ORDER ====================== */
+
+    @PostMapping("/admin/{orderId}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> cancelOrderByAdmin(@PathVariable Long orderId) {
+        orderService.cancelOrderByAdmin(orderId);
+        return ResponseEntity.ok("Order cancelled by admin successfully ✅");
     }
 }

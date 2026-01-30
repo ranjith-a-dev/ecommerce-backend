@@ -36,61 +36,6 @@ import com.ranjith.ecommerce.validation.OrderStatusValidator;
 
 @Service
 public class OrderService {
-    // Helper method for status validation
-    private void validateUserCancellationAllowed(Order order) {
-        OrderStatus status = order.getStatus();
-        if (status == OrderStatus.SHIPPED || status == OrderStatus.DELIVERED ||
-            status == OrderStatus.CANCELLED || status == OrderStatus.REFUND_INITIATED ||
-            status == OrderStatus.REFUNDED) {
-            throw new CannotCancelOrderException("Order cannot be cancelled in current status: " + status);
-        }
-    }
-
-    private void validateAdminCancellationAllowed(Order order) {
-        OrderStatus status = order.getStatus();
-        if (status == OrderStatus.DELIVERED || status == OrderStatus.REFUNDED) {
-            throw new CannotCancelOrderException("Admin cannot cancel order in status: " + status);
-        }
-    }
-
-    @Transactional
-    public void cancelOrderByUser(Long orderId, String username) {
-        Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-
-        if (!order.getUser().getUsername().equals(username)) {
-            throw new UnauthorizedUserException("User not authorized to cancel this order");
-        }
-
-        validateUserCancellationAllowed(order);
-
-        if (order.getStatus() == OrderStatus.CREATED || order.getStatus() == OrderStatus.PAYMENT_PENDING) {
-            order.setStatus(OrderStatus.CANCELLED);
-        } else if (order.getStatus() == OrderStatus.PAID) {
-            order.setStatus(OrderStatus.CANCELLED);
-            order.setStatus(OrderStatus.REFUND_INITIATED);
-            // Optionally, trigger refund logic here
-        }
-        orderRepo.save(order);
-    }
-
-    @Transactional
-    public void cancelOrderByAdmin(Long orderId, String cancelReason) {
-        Order order = orderRepo.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-
-        validateAdminCancellationAllowed(order);
-
-        if (order.getStatus() == OrderStatus.CREATED || order.getStatus() == OrderStatus.PAYMENT_PENDING) {
-            order.setStatus(OrderStatus.CANCELLED);
-        } else if (order.getStatus() == OrderStatus.PAID) {
-            order.setStatus(OrderStatus.CANCELLED);
-            order.setStatus(OrderStatus.REFUND_INITIATED);
-            // Optionally, trigger refund logic here
-        }
-        // Optionally, save cancelReason somewhere (e.g., order.setCancelReason(cancelReason))
-        orderRepo.save(order);
-    }
 
     @Autowired
     private OrderRepo orderRepo;
@@ -109,6 +54,8 @@ public class OrderService {
 
     @Autowired
     private OrderStatusValidator orderStatusValidator;
+
+    /* ====================== PLACE ORDER ====================== */
 
     @Transactional
     public OrderDetailDTO placeOrder(User user, OrderRequestDTO orderRequest) {
@@ -137,6 +84,7 @@ public class OrderService {
                         "Insufficient stock for product: " + product.getName());
             }
 
+            // ✅ reduce stock immediately
             product.setStock(product.getStock() - cartItem.getQuantity());
             productRepo.save(product);
 
@@ -156,10 +104,11 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         order.setOrderItems(orderItems);
 
-        // Create shipping address - it will be linked via order_id
+        // ✅ Shipping Address
         ShippingAddress shippingAddress = new ShippingAddress();
         ShippingAddressDTO addressDTO = orderRequest.getShippingAddress();
-        shippingAddress.setOrder(order); // Set the order reference
+
+        shippingAddress.setOrder(order);
         shippingAddress.setFullName(addressDTO.getFullName());
         shippingAddress.setPhoneNumber(addressDTO.getPhoneNumber());
         shippingAddress.setStreetAddress(addressDTO.getStreetAddress());
@@ -168,8 +117,7 @@ public class OrderService {
         shippingAddress.setPostalCode(addressDTO.getPostalCode());
         shippingAddress.setCountry(addressDTO.getCountry());
         shippingAddress.setDeliveryInstructions(addressDTO.getDeliveryInstructions());
-        
-        // Add to shipping addresses list
+
         List<ShippingAddress> addresses = new ArrayList<>();
         addresses.add(shippingAddress);
         order.setShippingAddresses(addresses);
@@ -177,10 +125,13 @@ public class OrderService {
         Order savedOrder = orderRepo.save(order);
         orderItemRepo.saveAll(orderItems);
 
+        // ✅ clear cart after placing order
         cartItemService.clearCart(cart);
 
         return mapToDetailDto(savedOrder);
     }
+
+    /* ====================== GET ORDERS BY USER ====================== */
 
     public Page<UserOrderSummaryDTO> getOrdersByUser(
             Long userId,
@@ -189,10 +140,11 @@ public class OrderService {
             BigDecimal maxTotalAmount,
             Pageable pageable) {
 
-        return orderRepo.findOrdersByUser(
-                userId, status, minTotalAmount, maxTotalAmount, pageable)
+        return orderRepo.findOrdersByUser(userId, status, minTotalAmount, maxTotalAmount, pageable)
                 .map(this::mapToUserSummaryDto);
     }
+
+    /* ====================== GET ORDER DETAILS ====================== */
 
     public OrderDetailDTO getOrderById(Long orderId, User user) {
 
@@ -206,24 +158,7 @@ public class OrderService {
         return mapToDetailDto(order);
     }
 
-    public Page<AdminOrderSummaryDTO> getAllOrders(
-            Long userId,
-            OrderStatus status,
-            BigDecimal minTotalAmount,
-            BigDecimal maxTotalAmount,
-            Boolean refundRequested,
-            Pageable pageable) {
-
-        return orderRepo.findAllOrders(
-                userId, status, minTotalAmount, maxTotalAmount, refundRequested, pageable)
-                .map(this::mapToAdminSummaryDto);
-    }
-
-    public AdminOrderSummaryDTO getAdminOrderById(Long orderId) {
-        Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-        return mapToAdminSummaryDto(order);
-    }
+    /* ====================== CANCEL ORDER (USER) ====================== */
 
     @Transactional
     public UserOrderSummaryDTO cancelOrder(Long orderId, User user) {
@@ -235,19 +170,105 @@ public class OrderService {
             throw new CannotCancelOrderException("You cannot cancel this order");
         }
 
-        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
-
-        if (order.getStatus() == OrderStatus.PAID) {
-            for (OrderItem item : order.getOrderItems()) {
-                Product product = item.getProduct();
-                product.setStock(product.getStock() + item.getQuantity());
-                productRepo.save(product);
-            }
+        // Only allow cancel for CREATED, PAYMENT_PENDING, PAID
+        if (order.getStatus() == OrderStatus.SHIPPED ||
+            order.getStatus() == OrderStatus.DELIVERED ||
+            order.getStatus() == OrderStatus.CANCELLED ||
+            order.getStatus() == OrderStatus.REFUND_INITIATED ||
+            order.getStatus() == OrderStatus.REFUNDED) {
+            throw new CannotCancelOrderException("Order cannot be cancelled in current status: " + order.getStatus());
         }
 
+        // If PAID, initiate refund instead of cancel
+        if (order.getStatus() == OrderStatus.PAID) {
+            orderStatusValidator.validateStatusTransition(OrderStatus.PAID, OrderStatus.REFUND_INITIATED);
+            order.setStatus(OrderStatus.REFUND_INITIATED);
+            return mapToUserSummaryDto(orderRepo.save(order));
+        }
+
+        // For CREATED or PAYMENT_PENDING, cancel and restore stock
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+            productRepo.save(product);
+        }
+        orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
         order.setStatus(OrderStatus.CANCELLED);
         return mapToUserSummaryDto(orderRepo.save(order));
     }
+
+    /* ====================== REFUND REQUEST (USER) ====================== */
+
+    @Transactional
+    public UserOrderSummaryDTO refundRequest(Long orderId, User user) {
+
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new CannotCancelOrderException("This is not your order");
+        }
+
+        // ✅ best rule: refund allowed only after DELIVERED
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new CannotCancelOrderException("Refund allowed only for DELIVERED orders");
+        }
+
+        order.setRefundRequested(true);
+        return mapToUserSummaryDto(orderRepo.save(order));
+    }
+
+    /* ====================== ADMIN ORDERS ====================== */
+
+    public Page<AdminOrderSummaryDTO> getAllOrders(
+            Long userId,
+            OrderStatus status,
+            BigDecimal minTotalAmount,
+            BigDecimal maxTotalAmount,
+            Boolean refundRequested,
+            Pageable pageable) {
+
+        return orderRepo.findAllOrders(userId, status, minTotalAmount, maxTotalAmount, refundRequested, pageable)
+                .map(this::mapToAdminSummaryDto);
+    }
+
+    public AdminOrderSummaryDTO getAdminOrderById(Long orderId) {
+
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        return mapToAdminSummaryDto(order);
+    }
+
+    /* ====================== ADMIN CANCEL ====================== */
+
+    @Transactional
+    public void cancelOrderByAdmin(Long orderId) {
+
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        // ✅ admin cancel allowed until shipped (your choice)
+        if (order.getStatus() == OrderStatus.DELIVERED ||
+            order.getStatus() == OrderStatus.CANCELLED ||
+            order.getStatus() == OrderStatus.REFUND_INITIATED ||
+            order.getStatus() == OrderStatus.REFUNDED) {
+
+            throw new CannotCancelOrderException("Admin cannot cancel order in status: " + order.getStatus());
+        }
+
+        // ✅ restore stock
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+            productRepo.save(product);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepo.save(order);
+    }
+
+    /* ====================== ADMIN UPDATE STATUS ====================== */
 
     @Transactional
     public UserOrderSummaryDTO updateOrderStatus(Long orderId, OrderStatus newStatus) {
@@ -257,7 +278,7 @@ public class OrderService {
 
         orderStatusValidator.validateStatusTransition(order.getStatus(), newStatus);
 
-        // Restore stock when refund is approved
+        // ✅ Restore stock when refund is approved
         if (newStatus == OrderStatus.REFUNDED && order.getStatus() == OrderStatus.REFUND_INITIATED) {
             for (OrderItem item : order.getOrderItems()) {
                 Product product = item.getProduct();
@@ -270,23 +291,7 @@ public class OrderService {
         return mapToUserSummaryDto(orderRepo.save(order));
     }
 
-    @Transactional
-    public UserOrderSummaryDTO refundRequest(Long orderId, User user) {
-
-        Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-
-        if (!order.getUser().getId().equals(user.getId())) {
-            throw new CannotCancelOrderException("This is not your order");
-        }
-
-        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.DELIVERED) {
-            throw new CannotCancelOrderException("Refund allowed only for PAID or DELIVERED orders");
-        }
-
-        order.setRefundRequested(true);
-        return mapToUserSummaryDto(orderRepo.save(order));
-    }
+    /* ====================== DTO MAPPING ====================== */
 
     private OrderDetailDTO mapToDetailDto(Order order) {
 
@@ -304,12 +309,14 @@ public class OrderService {
             itemDto.setQuantity(item.getQuantity());
             itemDto.setPriceAtPurchase(item.getPriceAtPurchase());
 
-            BigDecimal itemTotal = item.getPriceAtPurchase().multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal itemTotal = item.getPriceAtPurchase()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+
             itemDto.setItemTotal(itemTotal);
 
             return itemDto;
 
-        }).toList(); 
+        }).toList();
 
         dto.setItems(items);
         return dto;
@@ -318,9 +325,9 @@ public class OrderService {
     private UserOrderSummaryDTO mapToUserSummaryDto(Order order) {
 
         int totalItems = order.getOrderItems()
-            .stream()
-            .mapToInt(OrderItem::getQuantity)
-            .sum();
+                .stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
 
         UserOrderSummaryDTO dto = new UserOrderSummaryDTO();
         dto.setOrderId(order.getId());
@@ -335,9 +342,9 @@ public class OrderService {
     private AdminOrderSummaryDTO mapToAdminSummaryDto(Order order) {
 
         int totalItems = order.getOrderItems()
-            .stream()
-            .mapToInt(OrderItem::getQuantity)
-            .sum();
+                .stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
 
         AdminOrderSummaryDTO dto = new AdminOrderSummaryDTO();
         dto.setOrderId(order.getId());

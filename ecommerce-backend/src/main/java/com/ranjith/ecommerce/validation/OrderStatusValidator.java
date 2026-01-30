@@ -22,9 +22,10 @@ public class OrderStatusValidator {
                 break;
 
             case PAID:
-                if(next != OrderStatus.SHIPPED && next != OrderStatus.REFUND_INITIATED)
+                if(next != OrderStatus.SHIPPED && next != OrderStatus.CANCELLED && next != OrderStatus.REFUND_INITIATED)
                     throw new IllegalStateException("Invalid order status transition");
                 break;
+
             
             case SHIPPED:
                 if(next != OrderStatus.DELIVERED)
