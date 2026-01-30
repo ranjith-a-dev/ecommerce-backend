@@ -19,10 +19,10 @@ const Payment = () => {
   const { state } = useLocation();
 
   const { cartItems, totalAmount, orderId } = state || {};
+
   const [method, setMethod] = useState("COD");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("PENDING");
-  // PENDING | SUCCESS | FAILED
+  const [status, setStatus] = useState("PENDING"); // PENDING | SUCCESS | FAILED
 
   if (!cartItems || !orderId) {
     return <Typography sx={{ mt: 4 }}>Invalid session</Typography>;
@@ -33,64 +33,39 @@ const Payment = () => {
     try {
       setLoading(true);
 
-      // Step 1: Check if payment already exists, otherwise initiate it
-      let paymentRef = null;
-      
+      // ✅ Step 1: Initiate payment (idempotent backend)
+      const initRes = await paymentService.initiatePayment(orderId);
+      const paymentRef = initRes.data?.paymentReference;
+
+      if (!paymentRef) throw new Error("Payment reference not received");
+
+      // ✅ Step 2: Mark payment success
+      await paymentService.markPaymentSuccess(paymentRef);
+      console.log("✅ markPaymentSuccess called for:", paymentRef);
+
+
+      // ✅ Step 3: Clear cart
       try {
-        // Try to initiate payment (first attempt)
-        console.log("Attempting to initiate payment for orderId:", orderId);
-        const paymentInitRes = await paymentService.initiatePayment(orderId);
-        console.log("Payment initiated successfully:", paymentInitRes.data);
-        paymentRef = paymentInitRes.data?.paymentReference;
-      } catch (err) {
-        // If payment already initiated, fetch the existing payment using the new endpoint
-        console.log("Payment already initiated, error:", err.message);
-        console.log("Fetching existing payment for order:", orderId);
-        try {
-          const paymentRes = await paymentService.getPaymentByOrderId(orderId);
-          console.log("Found existing payment:", paymentRes.data);
-          paymentRef = paymentRes.data?.paymentReference;
-        } catch (fetchErr) {
-          console.error("Failed to fetch payment:", fetchErr);
-          throw new Error("Could not find payment to process");
-        }
-      }
+        const cartRes = await cartService.getCart();
+        const items = cartRes.data;
 
-      if (paymentRef) {
-        console.log("Processing payment with reference:", paymentRef);
-        // Step 2: Mark payment as success
-        const successRes = await paymentService.markPaymentSuccess(paymentRef);
-        console.log("Payment marked as success:", successRes.data);
-
-        // Step 3: Clear cart after successful payment
-        try {
-          const cartRes = await cartService.getCart();
-          const cartItems = cartRes.data;
-          if (Array.isArray(cartItems)) {
-            for (const item of cartItems) {
-              await cartService.removeFromCart(item.productId);
-            }
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            await cartService.removeFromCart(item.productId);
           }
-        } catch (cartErr) {
-          console.error("Error clearing cart:", cartErr);
         }
-
-        console.log("Setting status to SUCCESS");
-        setStatus("SUCCESS");
-
-        // Navigate to orders page after 1.5 seconds
-        setTimeout(() => {
-          navigate("/orders");
-        }, 1500);
-      } else {
-        throw new Error("No payment reference obtained");
+      } catch (cartErr) {
+        console.error("Error clearing cart:", cartErr);
       }
+
+      setStatus("SUCCESS");
+
+      // ✅ Step 4: Go to orders (force refresh)
+      setTimeout(() => {
+        navigate("/orders", { replace: true });
+      }, 1200);
     } catch (err) {
-      console.error("Payment error details:", {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
+      console.error("Payment Success error:", err);
       setStatus("FAILED");
     } finally {
       setLoading(false);
@@ -102,41 +77,25 @@ const Payment = () => {
     try {
       setLoading(true);
 
-      // Step 1: Check if payment already exists, otherwise initiate it
-      let paymentRef = null;
+      // ✅ Step 1: Initiate payment (idempotent backend)
+      const initRes = await paymentService.initiatePayment(orderId);
+      const paymentRef = initRes.data?.paymentReference;
 
-      try {
-        // Try to initiate payment (first attempt)
-        const paymentInitRes = await paymentService.initiatePayment(orderId);
-        paymentRef = paymentInitRes.data?.paymentReference;
-      } catch {
-        // If payment already initiated, fetch the existing payment using the new endpoint
-        try {
-          const paymentRes = await paymentService.getPaymentByOrderId(orderId);
-          paymentRef = paymentRes.data?.paymentReference;
-        } catch {
-          throw new Error("Could not find payment to process");
-        }
-      }
+      if (!paymentRef) throw new Error("Payment reference not received");
 
-      if (paymentRef) {
-        // Mark payment as failed
-        await paymentService.markPaymentFailure(paymentRef);
+      // ✅ Step 2: Mark payment failed
+      await paymentService.markPaymentFailure(paymentRef);
 
-        setStatus("FAILED");
-      }
+      setStatus("FAILED");
     } catch (err) {
-      console.error("Payment failure error:", err);
+      console.error("Payment Failure error:", err);
       setStatus("FAILED");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------- RETRY PAYMENT ---------------- */
-  const retryPayment = () => {
-    setStatus("PENDING");
-  };
+  const retryPayment = () => setStatus("PENDING");
 
   /* ================= SUCCESS UI ================= */
   if (status === "SUCCESS") {
@@ -145,9 +104,7 @@ const Payment = () => {
         <Typography variant="h4" color="success.main" fontWeight={600}>
           🎉 Payment Successful
         </Typography>
-        <Typography sx={{ mt: 2 }}>
-          Your order has been placed successfully.
-        </Typography>
+        <Typography sx={{ mt: 2 }}>Your order has been placed successfully.</Typography>
       </Container>
     );
   }
@@ -159,23 +116,13 @@ const Payment = () => {
         <Typography variant="h4" color="error.main" fontWeight={600}>
           ❌ Payment Failed
         </Typography>
-        <Typography sx={{ mt: 2 }}>
-          Something went wrong. Please try again.
-        </Typography>
+        <Typography sx={{ mt: 2 }}>Something went wrong. Please try again.</Typography>
 
-        <Button
-          variant="contained"
-          sx={{ mt: 3, mr: 2 }}
-          onClick={retryPayment}
-        >
+        <Button variant="contained" sx={{ mt: 3, mr: 2 }} onClick={retryPayment}>
           Retry Payment
         </Button>
 
-        <Button
-          variant="outlined"
-          sx={{ mt: 3 }}
-          onClick={() => navigate("/checkout")}
-        >
+        <Button variant="outlined" sx={{ mt: 3 }} onClick={() => navigate("/checkout")}>
           Back to Checkout
         </Button>
       </Container>
@@ -204,7 +151,7 @@ const Payment = () => {
                 {item.productName} × {item.quantity}
               </Typography>
               <Typography>
-                ₹ {item.itemTotal || (item.price * item.quantity)}
+                ₹ {item.itemTotal || item.price * item.quantity}
               </Typography>
             </Box>
           ))}
@@ -219,10 +166,7 @@ const Payment = () => {
         <CardContent>
           <Typography fontWeight={600}>Payment Method</Typography>
 
-          <RadioGroup
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
+          <RadioGroup value={method} onChange={(e) => setMethod(e.target.value)}>
             <FormControlLabel value="COD" control={<Radio />} label="Cash on Delivery" />
             <FormControlLabel value="UPI" control={<Radio />} label="UPI (Demo)" />
             <FormControlLabel value="CARD" control={<Radio />} label="Card (Demo)" />
@@ -249,7 +193,7 @@ const Payment = () => {
         onClick={handleFailedPayment}
         disabled={loading}
       >
-        Pay Failed (Demo)
+        {loading ? "Processing..." : "Pay Failed (Demo)"}
       </Button>
     </Container>
   );

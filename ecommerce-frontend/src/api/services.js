@@ -60,7 +60,7 @@ export const orderService = {
     api.get(`/orders/${orderId}`),
   
   cancelOrder: (orderId) =>
-    api.post(`/orders/${orderId}/user-cancel`),
+    api.post(`/orders/${orderId}/cancel`),
   
   requestRefund: (orderId) =>
     api.post(`/orders/${orderId}/refund-request`),

@@ -79,7 +79,9 @@ const AdminOrders = () => {
       setOpenDetails(true);
     } catch (error) {
       console.error("Failed to load order details:", error);
-      setDetailsError(error.response?.data?.message || "Failed to load order details");
+      setDetailsError(
+        error.response?.data?.message || "Failed to load order details"
+      );
       setSelectedOrder(order); // Show what we have from table at least
       setOpenDetails(true);
     }
@@ -192,11 +194,13 @@ const AdminOrders = () => {
               </TableRow>
             ) : (
               orders.map((order) => (
-                <TableRow 
-                  key={order.orderId} 
-                  sx={{ 
+                <TableRow
+                  key={order.orderId}
+                  sx={{
                     "&:hover": { bgcolor: "#f9f9f9" },
-                    backgroundColor: order.refundRequested ? "#fff3e0" : "inherit",
+                    backgroundColor: order.refundRequested
+                      ? "#fff3e0"
+                      : "inherit",
                   }}
                 >
                   <TableCell>#{order.orderId}</TableCell>
@@ -215,7 +219,13 @@ const AdminOrders = () => {
                   </TableCell>
                   <TableCell>
                     {order.refundRequested ? (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
                         <Typography
                           sx={{
                             backgroundColor: "#ff6f00",
@@ -230,7 +240,11 @@ const AdminOrders = () => {
                         </Typography>
                       </Box>
                     ) : (
-                      <Typography sx={{ color: "#999", fontSize: "0.9rem" }}>—</Typography>
+                      <Typography
+                        sx={{ color: "#999", fontSize: "0.9rem" }}
+                      >
+                        —
+                      </Typography>
                     )}
                   </TableCell>
                   <TableCell>
@@ -292,6 +306,7 @@ const AdminOrders = () => {
               <Typography variant="body2">{detailsError}</Typography>
             </Box>
           )}
+
           {selectedOrder && (
             <Box sx={{ py: 2, display: "flex", flexDirection: "column", gap: 2 }}>
               <Box>
@@ -301,9 +316,8 @@ const AdminOrders = () => {
                 <Typography variant="body1">#{selectedOrder.orderId}</Typography>
               </Box>
 
-
               {/* Make all fields read-only if status is REFUNDED or CANCELLED */}
-              {(["REFUNDED", "CANCELLED"].includes(selectedOrder.status)) ? (
+              {["REFUNDED", "CANCELLED"].includes(selectedOrder.status) ? (
                 <Box sx={{ opacity: 0.6, pointerEvents: "none" }}>
                   <Box>
                     <Typography variant="body2" color="textSecondary">
@@ -315,7 +329,10 @@ const AdminOrders = () => {
                     <Typography variant="body2" color="textSecondary">
                       <strong>Total Amount:</strong>
                     </Typography>
-                    <Typography variant="body1" sx={{ color: "#1976d2", fontWeight: 600 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{ color: "#1976d2", fontWeight: 600 }}
+                    >
                       ₹ {selectedOrder.totalAmount?.toLocaleString()}
                     </Typography>
                   </Box>
@@ -337,7 +354,9 @@ const AdminOrders = () => {
                     <Typography variant="body2" color="textSecondary">
                       <strong>Shipping Address:</strong>
                     </Typography>
-                    <Typography variant="body1">{selectedOrder.shippingAddress}</Typography>
+                    <Typography variant="body1">
+                      {selectedOrder.shippingAddress}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="body2" color="textSecondary">
@@ -362,7 +381,10 @@ const AdminOrders = () => {
                     <Typography variant="body2" color="textSecondary">
                       <strong>Total Amount:</strong>
                     </Typography>
-                    <Typography variant="body1" sx={{ color: "#1976d2", fontWeight: 600 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{ color: "#1976d2", fontWeight: 600 }}
+                    >
                       ₹ {selectedOrder.totalAmount?.toLocaleString()}
                     </Typography>
                   </Box>
@@ -384,7 +406,9 @@ const AdminOrders = () => {
                     <Typography variant="body2" color="textSecondary">
                       <strong>Shipping Address:</strong>
                     </Typography>
-                    <Typography variant="body1">{selectedOrder.shippingAddress}</Typography>
+                    <Typography variant="body1">
+                      {selectedOrder.shippingAddress}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="body2" color="textSecondary">
@@ -402,15 +426,25 @@ const AdminOrders = () => {
               <Box
                 sx={{
                   p: 2,
-                  backgroundColor: selectedOrder.refundRequested ? "#fff3e0" : "#f5f5f5",
+                  backgroundColor: selectedOrder.refundRequested
+                    ? "#fff3e0"
+                    : "#f5f5f5",
                   borderRadius: 1,
-                  borderLeft: `4px solid ${selectedOrder.refundRequested ? "#ff6f00" : "#4caf50"}`,
+                  borderLeft: `4px solid ${
+                    selectedOrder.refundRequested ? "#ff6f00" : "#4caf50"
+                  }`,
                 }}
               >
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                   <strong>Refund Status:</strong>
                 </Typography>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <Typography
                     variant="body1"
                     sx={{
@@ -418,7 +452,9 @@ const AdminOrders = () => {
                       fontWeight: 600,
                     }}
                   >
-                    {selectedOrder.refundRequested ? "🔴 Refund Requested" : "✓ No Refund Request"}
+                    {selectedOrder.refundRequested
+                      ? "🔴 Refund Requested"
+                      : "✓ No Refund Request"}
                   </Typography>
                   {selectedOrder.refundRequested && (
                     <Typography variant="caption" sx={{ color: "#666" }}>
@@ -428,67 +464,107 @@ const AdminOrders = () => {
                 </Box>
               </Box>
 
-              {/* STATUS UPDATE SECTION */}
+              {/* ✅ STATUS UPDATE SECTION (UPDATED) */}
               <Box sx={{ mt: 3, pt: 2, borderTop: "1px solid #eee" }}>
                 <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
                   Update Order Status:
                 </Typography>
+
                 <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {["SHIPPED", "DELIVERED", "CANCELLED", "REFUND_INITIATED", "REFUNDED"].map((status) => {
-                    // Only allow REFUND_INITIATED if refundRequested is true
-                    const illegalRefund = status === "REFUND_INITIATED" && !selectedOrder.refundRequested;
-                    return (
-                      <Button
-                        key={status}
-                        variant={selectedOrder.status === status ? "contained" : "outlined"}
-                        size="small"
-                        onClick={() => handleUpdateStatus(selectedOrder.orderId, status)}
-                        disabled={
-                          ["REFUNDED", "CANCELLED"].includes(selectedOrder.status) || updatingStatus || illegalRefund
+                  {["SHIPPED", "DELIVERED", "CANCELLED", "REFUND_INITIATED", "REFUNDED"].map(
+                    (status) => {
+                      // ✅ Disable everything by default
+                      let disabled = true;
+
+                      // ✅ CREATED -> enable only CANCELLED
+                      if (selectedOrder.status === "CREATED") {
+                        disabled = status !== "CANCELLED";
+                      }
+
+                      // ✅ PAYMENT_PENDING -> enable only CANCELLED
+                      if (selectedOrder.status === "PAYMENT_PENDING") {
+                        disabled = status !== "CANCELLED";
+                      }
+
+                      // ✅ PAID -> enable SHIPPED and CANCELLED
+                      if (selectedOrder.status === "PAID") {
+                          disabled = !["SHIPPED", "CANCELLED"].includes(status);
+                      }
+
+
+                      // ✅ SHIPPED -> enable only DELIVERED
+                      if (selectedOrder.status === "SHIPPED") {
+                        disabled = status !== "DELIVERED";
+                      }
+
+                      // ✅ DELIVERED -> disable all
+                      if (selectedOrder.status === "DELIVERED") {
+                        if (selectedOrder.refundRequested) {
+                          disabled = status !== "REFUND_INITIATED";
+                        } else {
+                          // ❌ no refund request -> disable all
+                          disabled = true;
                         }
-                        sx={{
-                          backgroundColor:
-                            selectedOrder.status === status
-                              ? getStatusColor(status)
-                              : "transparent",
-                          color:
-                            selectedOrder.status === status ? "white" : getStatusColor(status),
-                          borderColor: getStatusColor(status),
-                          "&:hover": {
+                      }
+
+                      // ✅ CANCELLED -> disable all
+                      if (selectedOrder.status === "CANCELLED") {
+                        disabled = true;
+                      }
+
+                      // ✅ REFUND_INITIATED -> enable only REFUNDED
+                      if (selectedOrder.status === "REFUND_INITIATED") {
+                        disabled = status !== "REFUNDED";
+                      }
+
+                      // ✅ REFUNDED -> disable all
+                      if (selectedOrder.status === "REFUNDED") {
+                        disabled = true;
+                      }
+
+                      // ✅ Also disable if updating
+                      disabled = disabled || updatingStatus;
+
+                      return (
+                        <Button
+                          key={status}
+                          variant={
+                            selectedOrder.status === status ? "contained" : "outlined"
+                          }
+                          size="small"
+                          onClick={() =>
+                            handleUpdateStatus(selectedOrder.orderId, status)
+                          }
+                          disabled={disabled}
+                          sx={{
                             backgroundColor:
                               selectedOrder.status === status
                                 ? getStatusColor(status)
                                 : "transparent",
-                          },
-                        }}
-                      >
-                        {status}
-                      </Button>
-                    );
-                  })}
+                            color:
+                              selectedOrder.status === status
+                                ? "white"
+                                : getStatusColor(status),
+                            borderColor: getStatusColor(status),
+                            "&:hover": {
+                              backgroundColor:
+                                selectedOrder.status === status
+                                  ? getStatusColor(status)
+                                  : "transparent",
+                            },
+                          }}
+                        >
+                          {status}
+                        </Button>
+                      );
+                    }
+                  )}
                 </Box>
-                {/* Refund suggestion box */}
-                {selectedOrder && selectedOrder.refundRequested && (
-                  <Box
-                    sx={{
-                      mt: 2,
-                      p: 2,
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: 1,
-                      borderLeft: `4px solid #1976d2`,
-                    }}
-                  >
-                    <Typography variant="caption" sx={{ color: "#1976d2", fontWeight: 600 }}>
-                      💡 Suggested Action: User has requested refund for this delivered order.
-                      <br />
-                      To process refund: Change status to <strong>REFUND_INITIATED</strong> (then to <strong>REFUNDED</strong> after processing payment)
-                    </Typography>
-                  </Box>
-                )}
               </Box>
             </Box>
           )}
         </DialogContent>
+
         <DialogActions>
           <Button
             onClick={() => {
