@@ -42,43 +42,37 @@ public class PaymentService {
     @Autowired
     private OrderStatusValidator orderStatusValidator;
 
-    /* ====================== GET PAYMENTS ====================== */
-
     public Page<PaymentResponseDTO> getPayments(
-            User user,
-            PaymentStatus status,
-            BigDecimal minAmount,
-            BigDecimal maxAmount,
-            Pageable pageable
+        User user,
+        PaymentStatus status,
+        BigDecimal minAmount,
+        BigDecimal maxAmount,
+        Pageable pageable
     ) {
         return paymentRepo.findUserPayments(user, status, minAmount, maxAmount, pageable)
-                .map(this::mapToPaymentResponseDTO);
+            .map(this::mapToPaymentResponseDTO);
     }
 
     public Page<PaymentResponseDTO> getAllPayments(
-            Long userId,
-            PaymentStatus status,
-            BigDecimal minAmount,
-            BigDecimal maxAmount,
-            Pageable pageable
-    ) {
+        Long userId,
+        PaymentStatus status,
+        BigDecimal minAmount,
+        BigDecimal maxAmount,
+        Pageable pageable
+    ){
         return paymentRepo.findAllPayments(userId, status, minAmount, maxAmount, pageable)
-                .map(this::mapToPaymentResponseDTO);
+            .map(this::mapToPaymentResponseDTO);
     }
-
-    /* ====================== INITIATE PAYMENT ====================== */
 
     @Transactional
     public PaymentResponseDTO initiatePayment(Long orderId, User user) {
 
         Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!order.getUser().getId().equals(user.getId()))
             throw new UnauthorizedUserException("You are not authorized to pay this order");
-        }
 
-        // ❌ cannot pay closed orders
         if (order.getStatus() == OrderStatus.CANCELLED ||
             order.getStatus() == OrderStatus.SHIPPED ||
             order.getStatus() == OrderStatus.DELIVERED ||
@@ -87,16 +81,12 @@ public class PaymentService {
             throw new IllegalStateException("Order already closed. Payment not allowed.");
         }
 
-        // ✅ if already paid
-        if (order.getStatus() == OrderStatus.PAID) {
+        if (order.getStatus() == OrderStatus.PAID)
             throw new IllegalStateException("Order already PAID");
-        }
 
-        // ✅ if payment exists, return it (idempotent)
         Optional<Payment> existingPaymentOpt = paymentRepo.findByOrder(order);
         if (existingPaymentOpt.isPresent()) {
 
-            // ✅ ensure order is PAYMENT_PENDING if user is trying to pay
             if (order.getStatus() == OrderStatus.CREATED) {
                 orderStatusValidator.validateStatusTransition(OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING);
                 order.setStatus(OrderStatus.PAYMENT_PENDING);
@@ -106,7 +96,6 @@ public class PaymentService {
             return mapToPaymentResponseDTO(existingPaymentOpt.get());
         }
 
-        // ✅ first time initiate payment
         orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.PAYMENT_PENDING);
         order.setStatus(OrderStatus.PAYMENT_PENDING);
 
@@ -122,27 +111,18 @@ public class PaymentService {
         return mapToPaymentResponseDTO(payment);
     }
 
-    /* ====================== MARK PAYMENT SUCCESS ====================== */
-
     @Transactional
     public void markPaymentSuccess(String paymentRef) {
 
         Payment payment = paymentRepo.findByPaymentReference(paymentRef)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
 
         Order order = orderRepo.findById(payment.getOrder().getId())
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        System.out.println("✅ markPaymentSuccess HIT: " + paymentRef);
-        System.out.println("Order BEFORE: " + order.getStatus());
-        System.out.println("Payment BEFORE: " + payment.getStatus());
-
-        // ✅ idempotent
-        if (payment.getStatus() == PaymentStatus.SUCCESS && order.getStatus() == OrderStatus.PAID) {
+        if (payment.getStatus() == PaymentStatus.SUCCESS && order.getStatus() == OrderStatus.PAID)
             return;
-        }
 
-        // ❌ cannot mark success if order already closed
         if (order.getStatus() == OrderStatus.CANCELLED ||
             order.getStatus() == OrderStatus.SHIPPED ||
             order.getStatus() == OrderStatus.DELIVERED ||
@@ -151,11 +131,9 @@ public class PaymentService {
             throw new IllegalStateException("Cannot mark payment success for closed order");
         }
 
-        // ✅ update payment status
         payment.setStatus(PaymentStatus.SUCCESS);
         paymentRepo.saveAndFlush(payment);
 
-        // ✅ ALWAYS move order to PAID (validator safe)
         if (order.getStatus() == OrderStatus.CREATED) {
             orderStatusValidator.validateStatusTransition(OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING);
             order.setStatus(OrderStatus.PAYMENT_PENDING);
@@ -165,81 +143,56 @@ public class PaymentService {
             orderStatusValidator.validateStatusTransition(OrderStatus.PAYMENT_PENDING, OrderStatus.PAID);
             order.setStatus(OrderStatus.PAID);
         } else if (order.getStatus() != OrderStatus.PAID) {
-            // if for some reason it is still not PAID (edge case)
             order.setStatus(OrderStatus.PAID);
         }
 
         orderRepo.saveAndFlush(order);
-
-        System.out.println("✅ Order AFTER: " + orderRepo.findById(order.getId()).get().getStatus());
-        System.out.println("✅ Payment AFTER: " + paymentRepo.findById(payment.getId()).get().getStatus());
     }
-
-    /* ====================== MARK PAYMENT FAILURE ====================== */
 
     @Transactional
     public void markPaymentFailure(String paymentRef) {
 
         Payment payment = paymentRepo.findByPaymentReference(paymentRef)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
 
         Order order = orderRepo.findById(payment.getOrder().getId())
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        System.out.println("✅ markPaymentFailure HIT: " + paymentRef);
-        System.out.println("Order BEFORE: " + order.getStatus());
-        System.out.println("Payment BEFORE: " + payment.getStatus());
-
-        // ✅ idempotent
-        if (payment.getStatus() == PaymentStatus.FAILED) {
+        if (payment.getStatus() == PaymentStatus.FAILED)
             return;
-        }
 
-        // ❌ cannot fail after success
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+        if (payment.getStatus() == PaymentStatus.SUCCESS)
             throw new IllegalStateException("Cannot mark failure after success");
-        }
 
-        // ✅ only INITIATED can become FAILED
-        if (payment.getStatus() != PaymentStatus.INITIATED) {
+        if (payment.getStatus() != PaymentStatus.INITIATED)
             throw new PaymentAlreadyDoneException("Payment already processed");
-        }
 
-        // ✅ mark payment as failed
         payment.setStatus(PaymentStatus.FAILED);
         paymentRepo.saveAndFlush(payment);
 
-        // ✅ keep order as PAYMENT_PENDING (so retry works)
         if (order.getStatus() == OrderStatus.CREATED) {
             orderStatusValidator.validateStatusTransition(OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING);
             order.setStatus(OrderStatus.PAYMENT_PENDING);
             orderRepo.saveAndFlush(order);
         }
-
-        System.out.println("✅ Order AFTER: " + orderRepo.findById(order.getId()).get().getStatus());
-        System.out.println("✅ Payment AFTER: " + paymentRepo.findById(payment.getId()).get().getStatus());
     }
-
-    /* ====================== INITIATE REFUND (ADMIN) ====================== */
 
     @Transactional
     public void initiateRefund(Long orderId) {
 
         Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.DELIVERED) {
+        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.DELIVERED)
             throw new IllegalStateException("Refund initiation allowed only for PAID/DELIVERED orders");
-        }
 
-        if (!order.isRefundRequested()) {
+        if (!order.isRefundRequested())
             throw new IllegalStateException("Refund not requested by user");
-        }
 
         orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUND_INITIATED);
 
         Payment payment = paymentRepo.findByOrder(order)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
 
         payment.setStatus(PaymentStatus.REFUND_INITIATED);
         order.setStatus(OrderStatus.REFUND_INITIATED);
@@ -248,28 +201,24 @@ public class PaymentService {
         orderRepo.saveAndFlush(order);
     }
 
-    /* ====================== COMPLETE REFUND (ADMIN) ====================== */
-
     @Transactional
     public void completeRefund(Long orderId) {
 
         Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (order.getStatus() != OrderStatus.REFUND_INITIATED) {
+        if (order.getStatus() != OrderStatus.REFUND_INITIATED)
             throw new IllegalStateException("Refund not initiated");
-        }
 
         orderStatusValidator.validateStatusTransition(order.getStatus(), OrderStatus.REFUNDED);
 
         Payment payment = paymentRepo.findByOrder(order)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
 
         payment.setStatus(PaymentStatus.REFUNDED);
         order.setStatus(OrderStatus.REFUNDED);
         order.setRefundRequested(false);
 
-        // ✅ return stock after refund
         for (OrderItem orderItem : order.getOrderItems()) {
             Product product = orderItem.getProduct();
             product.setStock(product.getStock() + orderItem.getQuantity());
@@ -280,25 +229,20 @@ public class PaymentService {
         orderRepo.saveAndFlush(order);
     }
 
-    /* ====================== GET PAYMENT BY ORDER ====================== */
-
     @Transactional
     public PaymentResponseDTO getPaymentByOrderId(Long orderId, User user) {
 
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!order.getUser().getId().equals(user.getId()))
             throw new UnauthorizedUserException("You are not authorized to access this payment");
-        }
 
         Payment payment = paymentRepo.findByOrder(order)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found for this order"));
+            .orElseThrow(() -> new PaymentNotFoundException("Payment not found for this order"));
 
         return mapToPaymentResponseDTO(payment);
     }
-
-    /* ====================== DTO MAPPING ====================== */
 
     private PaymentResponseDTO mapToPaymentResponseDTO(Payment payment) {
         PaymentResponseDTO dto = new PaymentResponseDTO();

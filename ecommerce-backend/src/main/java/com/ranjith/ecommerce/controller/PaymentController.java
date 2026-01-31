@@ -30,8 +30,6 @@ public class PaymentController {
     @Autowired
     private UserRepo userRepo;
 
-    /* ====================== GET MY PAYMENTS ====================== */
-
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<PaymentResponseDTO>> getPayments(
@@ -47,8 +45,6 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPayments(user, status, minAmount, maxAmount, pageable));
     }
 
-    /* ====================== GET PAYMENT BY ORDER ====================== */
-
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<PaymentResponseDTO> getPaymentByOrderId(
@@ -61,10 +57,8 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId, user));
     }
 
-    /* ====================== INITIATE PAYMENT ====================== */
-
     @PostMapping("/initiate")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')") // ✅ FIXED
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')") 
     public ResponseEntity<PaymentResponseDTO> initiatePayment(
             @RequestParam Long orderId,
             @AuthenticationPrincipal UserDetails userDetails
@@ -76,8 +70,6 @@ public class PaymentController {
                 .body(paymentService.initiatePayment(orderId, user));
     }
 
-    /* ====================== PAYMENT SUCCESS ====================== */
-
     @PostMapping("/success")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ApiResponseDTO> markPaymentSuccess(@RequestParam String paymentRef) {
@@ -85,16 +77,12 @@ public class PaymentController {
         return ResponseEntity.ok(new ApiResponseDTO("Payment marked as success ✅"));
     }
 
-    /* ====================== PAYMENT FAILURE ====================== */
-
     @PostMapping("/failure")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ApiResponseDTO> markPaymentFailure(@RequestParam String paymentRef) {
         paymentService.markPaymentFailure(paymentRef);
         return ResponseEntity.ok(new ApiResponseDTO("Payment marked as failed ✅"));
     }
-
-    /* ====================== ADMIN REFUND FLOW ====================== */
 
     @PostMapping("/refund/initiate/{orderId}")
     @PreAuthorize("hasRole('ADMIN')")

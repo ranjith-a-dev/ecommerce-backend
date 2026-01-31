@@ -49,10 +49,8 @@ public class JwtUtil {
     public List<String> extractAuthorities(String token){
         try {
             List<String> authorities = getClaims(token).get("authorities", List.class);
-            System.out.println("DEBUG JwtUtil extractAuthorities: Extracted authorities = " + authorities);
             return authorities != null ? authorities : List.of();
         } catch(Exception e) {
-            System.out.println("DEBUG JwtUtil extractAuthorities: Error extracting - " + e.getMessage());
             return List.of();
         }
     }

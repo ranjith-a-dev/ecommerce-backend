@@ -55,8 +55,6 @@ public class OrderService {
     @Autowired
     private OrderStatusValidator orderStatusValidator;
 
-    /* ====================== PLACE ORDER ====================== */
-
     @Transactional
     public OrderDetailDTO placeOrder(User user, OrderRequestDTO orderRequest) {
 
@@ -79,12 +77,9 @@ public class OrderService {
 
             Product product = cartItem.getProduct();
 
-            if (cartItem.getQuantity() > product.getStock()) {
-                throw new InsufficientStockException(
-                        "Insufficient stock for product: " + product.getName());
-            }
+            if (cartItem.getQuantity() > product.getStock()) 
+                throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
 
-            // ✅ reduce stock immediately
             product.setStock(product.getStock() - cartItem.getQuantity());
             productRepo.save(product);
 
@@ -104,7 +99,6 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         order.setOrderItems(orderItems);
 
-        // ✅ Shipping Address
         ShippingAddress shippingAddress = new ShippingAddress();
         ShippingAddressDTO addressDTO = orderRequest.getShippingAddress();
 
@@ -125,13 +119,10 @@ public class OrderService {
         Order savedOrder = orderRepo.save(order);
         orderItemRepo.saveAll(orderItems);
 
-        // ✅ clear cart after placing order
         cartItemService.clearCart(cart);
 
         return mapToDetailDto(savedOrder);
     }
-
-    /* ====================== GET ORDERS BY USER ====================== */
 
     public Page<UserOrderSummaryDTO> getOrdersByUser(
             Long userId,
@@ -144,21 +135,16 @@ public class OrderService {
                 .map(this::mapToUserSummaryDto);
     }
 
-    /* ====================== GET ORDER DETAILS ====================== */
-
     public OrderDetailDTO getOrderById(Long orderId, User user) {
 
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!order.getUser().getId().equals(user.getId()))
             throw new UnauthorizedUserException("You are not authorized to view this order");
-        }
 
         return mapToDetailDto(order);
     }
-
-    /* ====================== CANCEL ORDER (USER) ====================== */
 
     @Transactional
     public UserOrderSummaryDTO cancelOrder(Long orderId, User user) {
@@ -170,7 +156,6 @@ public class OrderService {
             throw new CannotCancelOrderException("You cannot cancel this order");
         }
 
-        // Only allow cancel for CREATED, PAYMENT_PENDING, PAID
         if (order.getStatus() == OrderStatus.SHIPPED ||
             order.getStatus() == OrderStatus.DELIVERED ||
             order.getStatus() == OrderStatus.CANCELLED ||
@@ -179,14 +164,12 @@ public class OrderService {
             throw new CannotCancelOrderException("Order cannot be cancelled in current status: " + order.getStatus());
         }
 
-        // If PAID, initiate refund instead of cancel
         if (order.getStatus() == OrderStatus.PAID) {
             orderStatusValidator.validateStatusTransition(OrderStatus.PAID, OrderStatus.REFUND_INITIATED);
             order.setStatus(OrderStatus.REFUND_INITIATED);
             return mapToUserSummaryDto(orderRepo.save(order));
         }
 
-        // For CREATED or PAYMENT_PENDING, cancel and restore stock
         for (OrderItem item : order.getOrderItems()) {
             Product product = item.getProduct();
             product.setStock(product.getStock() + item.getQuantity());
@@ -197,28 +180,21 @@ public class OrderService {
         return mapToUserSummaryDto(orderRepo.save(order));
     }
 
-    /* ====================== REFUND REQUEST (USER) ====================== */
-
     @Transactional
     public UserOrderSummaryDTO refundRequest(Long orderId, User user) {
 
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!order.getUser().getId().equals(user.getId()))
             throw new CannotCancelOrderException("This is not your order");
-        }
 
-        // ✅ best rule: refund allowed only after DELIVERED
-        if (order.getStatus() != OrderStatus.DELIVERED) {
+        if (order.getStatus() != OrderStatus.DELIVERED)
             throw new CannotCancelOrderException("Refund allowed only for DELIVERED orders");
-        }
 
         order.setRefundRequested(true);
         return mapToUserSummaryDto(orderRepo.save(order));
     }
-
-    /* ====================== ADMIN ORDERS ====================== */
 
     public Page<AdminOrderSummaryDTO> getAllOrders(
             Long userId,
@@ -240,15 +216,12 @@ public class OrderService {
         return mapToAdminSummaryDto(order);
     }
 
-    /* ====================== ADMIN CANCEL ====================== */
-
     @Transactional
     public void cancelOrderByAdmin(Long orderId) {
 
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        // ✅ admin cancel allowed until shipped (your choice)
         if (order.getStatus() == OrderStatus.DELIVERED ||
             order.getStatus() == OrderStatus.CANCELLED ||
             order.getStatus() == OrderStatus.REFUND_INITIATED ||
@@ -257,7 +230,6 @@ public class OrderService {
             throw new CannotCancelOrderException("Admin cannot cancel order in status: " + order.getStatus());
         }
 
-        // ✅ restore stock
         for (OrderItem item : order.getOrderItems()) {
             Product product = item.getProduct();
             product.setStock(product.getStock() + item.getQuantity());
@@ -268,8 +240,6 @@ public class OrderService {
         orderRepo.save(order);
     }
 
-    /* ====================== ADMIN UPDATE STATUS ====================== */
-
     @Transactional
     public UserOrderSummaryDTO updateOrderStatus(Long orderId, OrderStatus newStatus) {
 
@@ -278,7 +248,6 @@ public class OrderService {
 
         orderStatusValidator.validateStatusTransition(order.getStatus(), newStatus);
 
-        // ✅ Restore stock when refund is approved
         if (newStatus == OrderStatus.REFUNDED && order.getStatus() == OrderStatus.REFUND_INITIATED) {
             for (OrderItem item : order.getOrderItems()) {
                 Product product = item.getProduct();
