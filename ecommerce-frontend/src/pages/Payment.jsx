@@ -28,23 +28,18 @@ const Payment = () => {
     return <Typography sx={{ mt: 4 }}>Invalid session</Typography>;
   }
 
-  /* ---------------- SUCCESS PAYMENT ---------------- */
   const handleSuccessPayment = async () => {
     try {
       setLoading(true);
 
-      // ✅ Step 1: Initiate payment (idempotent backend)
       const initRes = await paymentService.initiatePayment(orderId);
       const paymentRef = initRes.data?.paymentReference;
 
       if (!paymentRef) throw new Error("Payment reference not received");
 
-      // ✅ Step 2: Mark payment success
+
       await paymentService.markPaymentSuccess(paymentRef);
-      console.log("✅ markPaymentSuccess called for:", paymentRef);
 
-
-      // ✅ Step 3: Clear cart
       try {
         const cartRes = await cartService.getCart();
         const items = cartRes.data;
@@ -60,7 +55,6 @@ const Payment = () => {
 
       setStatus("SUCCESS");
 
-      // ✅ Step 4: Go to orders (force refresh)
       setTimeout(() => {
         navigate("/orders", { replace: true });
       }, 1200);
@@ -72,18 +66,15 @@ const Payment = () => {
     }
   };
 
-  /* ---------------- FAILED PAYMENT ---------------- */
   const handleFailedPayment = async () => {
     try {
       setLoading(true);
 
-      // ✅ Step 1: Initiate payment (idempotent backend)
       const initRes = await paymentService.initiatePayment(orderId);
       const paymentRef = initRes.data?.paymentReference;
 
       if (!paymentRef) throw new Error("Payment reference not received");
 
-      // ✅ Step 2: Mark payment failed
       await paymentService.markPaymentFailure(paymentRef);
 
       setStatus("FAILED");
@@ -97,7 +88,6 @@ const Payment = () => {
 
   const retryPayment = () => setStatus("PENDING");
 
-  /* ================= SUCCESS UI ================= */
   if (status === "SUCCESS") {
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
@@ -109,7 +99,6 @@ const Payment = () => {
     );
   }
 
-  /* ================= FAILED UI ================= */
   if (status === "FAILED") {
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
@@ -129,14 +118,13 @@ const Payment = () => {
     );
   }
 
-  /* ================= PAYMENT PAGE ================= */
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
       <Typography variant="h4" fontWeight={600} gutterBottom>
         Payment
       </Typography>
 
-      {/* ORDER SUMMARY */}
+
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography fontWeight={600}>Order Summary</Typography>
@@ -161,7 +149,6 @@ const Payment = () => {
         </CardContent>
       </Card>
 
-      {/* PAYMENT METHOD */}
       <Card>
         <CardContent>
           <Typography fontWeight={600}>Payment Method</Typography>
@@ -174,7 +161,6 @@ const Payment = () => {
         </CardContent>
       </Card>
 
-      {/* DEMO PAYMENT BUTTONS */}
       <Button
         fullWidth
         variant="contained"

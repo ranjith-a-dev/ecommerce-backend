@@ -41,7 +41,6 @@ const Products = () => {
       setCartItems(res.data);
     }
     catch(error){
-      // Silently handle cart fetch errors - just set empty cart
       console.debug("Cart fetch error (expected for some users):", error.response?.status);
       setCartItems([]);
     }
@@ -63,7 +62,6 @@ const Products = () => {
         Products
       </Typography>
 
-      {/* FILTERS SECTION */}
       <Grid container spacing={2} sx={{ mb: 4, p: 2, backgroundColor: "#f9f9f9", borderRadius: 2 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Select
@@ -133,7 +131,6 @@ const Products = () => {
         </Grid>
       </Grid>
  
-      {/* PRODUCTS GRID */}
       <Grid container spacing={3} sx={{ mt: 0.5 }}>
         {products.map((product) => (
           <Grid item xs={12} sm={6} lg={4} key={product.id} sx={{ display: "flex" }}>

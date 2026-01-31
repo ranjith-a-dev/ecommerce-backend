@@ -95,7 +95,6 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      // Trim all fields before sending
       const trimmedFormData = {
         fullName: formData.fullName.trim(),
         phoneNumber: formData.phoneNumber.trim(),
@@ -106,8 +105,6 @@ const Checkout = () => {
         country: formData.country.trim(),
         deliveryInstructions: formData.deliveryInstructions.trim(),
       };
-
-      console.log("Sending order with data:", trimmedFormData);
 
       const orderResponse = await orderService.checkout({
         shippingAddress: trimmedFormData,
@@ -172,14 +169,12 @@ return (
       </Stepper>
 
       <Grid container spacing={3}>
-        {/* LEFT - ADDRESS FORM */}
         <Grid item xs={12} md={7}>
           <Card sx={{ 
             borderRadius: 2,
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}>
             <CardContent sx={{ p: 3 }}>
-              {/* SHIPPING SECTION */}
               <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                 <LocalShipping sx={{ mr: 1.5, color: "#1976d2", fontSize: "1.8rem" }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
@@ -286,7 +281,6 @@ return (
 
               <Divider sx={{ my: 3 }} />
 
-              {/* DELIVERY INSTRUCTIONS */}
               <TextField
                 label="Delivery Instructions (Optional)"
                 fullWidth
@@ -303,7 +297,6 @@ return (
           </Card>
         </Grid>
 
-        {/* RIGHT - ORDER SUMMARY */}
         <Grid item xs={12} md={5}>
           <Paper
             sx={{
@@ -373,7 +366,6 @@ return (
 
             <Divider sx={{ my: 2 }} />
 
-            {/* PRICE BREAKDOWN */}
             <Box sx={{ mb: 2 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
                 <Typography fontWeight={600}>
@@ -414,7 +406,6 @@ return (
               </Typography>
             </Box>
 
-            {/* PROCEED BUTTON */}
             <Button
               variant="contained"
               fullWidth
@@ -441,7 +432,6 @@ return (
               {loading ? "Processing..." : "Place Order"}
             </Button>
 
-            {/* BACK BUTTON */}
             <Button
               variant="outlined"
               fullWidth
@@ -457,7 +447,6 @@ return (
               Back to Cart
             </Button>
 
-            {/* SECURITY INFO */}
             <Paper
               sx={{
                 p: 2,

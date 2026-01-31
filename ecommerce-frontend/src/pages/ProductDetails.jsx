@@ -42,7 +42,6 @@ const ProductDetails = () => {
     <Container sx={{ mt: 4 }}>
       <Box display="flex" gap={5} flexWrap="wrap">
         
-        {/* LEFT: Product Image */}
         <Box>
           <img
             src={product.imageUrls?.[0] || "/placeholder.png"}
@@ -52,7 +51,6 @@ const ProductDetails = () => {
           />
         </Box>
 
-        {/* RIGHT: Product Info */}
         <Box maxWidth="500px">
           <Typography variant="h4">{product.name}</Typography>
 

@@ -41,7 +41,6 @@ api.interceptors.response.use(
                 message: message,
                 fullError: error.response?.data
             });
-            // Don't show alert, just log it
         }
         
         console.error("API Error:", message);

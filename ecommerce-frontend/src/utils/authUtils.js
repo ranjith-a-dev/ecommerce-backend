@@ -15,7 +15,6 @@ export const decodeToken = () => {
     );
 
     const decoded = JSON.parse(jsonPayload);
-    console.log("Decoded Token:", decoded); // For debugging
     return decoded;
   } catch (error) {
     console.error("Failed to decode token:", error);
