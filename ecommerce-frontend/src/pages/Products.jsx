@@ -1,50 +1,71 @@
-import { Container, Grid, Pagination, Typography, Select, MenuItem, TextField, Checkbox, FormControlLabel, Box } from "@mui/material";
+import {
+  Container,
+  Grid,
+  Pagination,
+  Typography,
+  Select,
+  MenuItem,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+  Box,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import { productService, cartService } from "../api/services";
 import ProductCard from "../components/ProductCard";
 import { useSearchParams } from "react-router-dom";
 
 const Products = () => {
-  
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [categoryId, setCategoryId] = useState("");
-  const [searchParams] = useSearchParams();
-  const [minPrice,setMinPrice] = useState("");
-  const [maxPrice,setMaxPrice] = useState("");
-  const [inStock,setInStock] = useState(false);
-  const [cartItems,setCartItems] = useState([]);
 
+  const [categoryId, setCategoryId] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [inStock, setInStock] = useState(false);
+
+  const [cartItems, setCartItems] = useState([]);
+
+  const [searchParams] = useSearchParams();
   const search = searchParams.get("search");
 
   const fetchProducts = async (pageNumber) => {
     try {
-      const res = await productService.getAllProducts(pageNumber - 1, 10, {
-        categoryId: categoryId || undefined,
+      const filters = {
+        categoryId: categoryId ? Number(categoryId) : undefined,
         name: search || undefined,
-        minPrice: minPrice || undefined,
-        maxPrice: maxPrice || undefined,
+        minPrice: minPrice !== "" ? Number(minPrice) : undefined,
+        maxPrice: maxPrice !== "" ? Number(maxPrice) : undefined,
         inStock: inStock ? true : undefined,
-      });
+      };
 
-      setProducts(res.data.content);
-      setTotalPages(res.data.totalPages);
+      const res = await productService.getAllProducts(pageNumber - 1, 10, filters);
+
+      // ✅ Support both backend formats:
+      // 1) Pagination: { content: [...], totalPages: n }
+      // 2) Direct Array: [ ... ]
+      const data = res.data;
+      const productList = Array.isArray(data) ? data : data?.content || [];
+
+      setProducts(productList);
+      setTotalPages(Array.isArray(data) ? 1 : data?.totalPages || 0);
     } catch (err) {
       console.error("Failed to fetch products", err);
+      setProducts([]);
+      setTotalPages(0);
     }
   };
 
   const fetchCarts = async () => {
-    try{
+    try {
       const res = await cartService.getCart();
-      setCartItems(res.data);
-    }
-    catch(error){
-      console.debug("Cart fetch error (expected for some users):", error.response?.status);
+      setCartItems(res.data || []);
+    // eslint-disable-next-line no-unused-vars
+    } catch (error) {
       setCartItems([]);
     }
-  }
+  };
 
   useEffect(() => {
     fetchProducts(page);
@@ -54,15 +75,20 @@ const Products = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography 
-        variant="h4" 
+      <Typography
+        variant="h4"
         gutterBottom
         sx={{ fontWeight: 700, mb: 4, color: "#1a1a1a" }}
       >
         Products
       </Typography>
 
-      <Grid container spacing={2} sx={{ mb: 4, p: 2, backgroundColor: "#f9f9f9", borderRadius: 2 }}>
+      {/* FILTERS */}
+      <Grid
+        container
+        spacing={2}
+        sx={{ mb: 4, p: 2, backgroundColor: "#f9f9f9", borderRadius: 2 }}
+      >
         <Grid item xs={12} sm={6} md={3}>
           <Select
             value={categoryId}
@@ -76,10 +102,10 @@ const Products = () => {
             sx={{ backgroundColor: "white" }}
           >
             <MenuItem value="">All Categories</MenuItem>
-            <MenuItem value={1}>Mobiles</MenuItem>
-            <MenuItem value={2}>Laptops</MenuItem>
-            <MenuItem value={3}>Accessories</MenuItem>
-            <MenuItem value={4}>Smart Devices</MenuItem>
+            <MenuItem value="1">Mobiles</MenuItem>
+            <MenuItem value="2">Laptops</MenuItem>
+            <MenuItem value="3">Accessories</MenuItem>
+            <MenuItem value="4">Smart Devices</MenuItem>
           </Select>
         </Grid>
 
@@ -130,7 +156,8 @@ const Products = () => {
           />
         </Grid>
       </Grid>
- 
+
+      {/* PRODUCTS LIST */}
       <Grid container spacing={3} sx={{ mt: 0.5 }}>
         {products.map((product) => (
           <Grid item xs={12} sm={6} lg={4} key={product.id} sx={{ display: "flex" }}>

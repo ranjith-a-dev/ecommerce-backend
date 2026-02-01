@@ -13,29 +13,34 @@ import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import AdminOrders from "./pages/AdminOrders";
 import AdminProductEdit from "./pages/AdminProductEdit";
+import AdminOrderDetails from "./pages/AdminOrderDetails";
 
 function App() {
   return (
     <BrowserRouter>
       <Navbar />
       <Toolbar />
-      <Box sx={{ backgroundColor: "#ffffff" }}>
+
+      <Box sx={{ minHeight: "calc(100vh - 64px)", background: "#fff" }}>
         <Routes>
           <Route path="/" element={<Products />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/carts" element={<Cart />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/products/:id" element={<ProductDetails />} />
+
+          <Route path="/carts" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/payment" element={<Payment />} />
+
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:orderId" element={<OrderDetails />} />
-          
-          {/* ADMIN ROUTES */}
+
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/products/create" element={<AdminProductEdit />} />
-          <Route path="/admin/products/:productId/edit" element={<AdminProductEdit />} />
+          <Route path="/admin/products/edit/:productId" element={<AdminProductEdit />} />
+          <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </Box>
     </BrowserRouter>

@@ -12,7 +12,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Chip,
 } from "@mui/material";
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -35,6 +34,9 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // ✅ NEW: place order error message
+  const [placeOrderError, setPlaceOrderError] = useState("");
+
   const fetchCart = useCallback(async () => {
     try {
       const res = await cartService.getCart();
@@ -56,21 +58,33 @@ const Checkout = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // ✅ clear field error
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+
+    // ✅ clear place order error while typing
+    if (placeOrderError) {
+      setPlaceOrderError("");
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
-    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
-    if (!formData.streetAddress.trim()) newErrors.streetAddress = "Street address is required";
+    if (!formData.phoneNumber.trim())
+      newErrors.phoneNumber = "Phone number is required";
+    if (!formData.streetAddress.trim())
+      newErrors.streetAddress = "Street address is required";
     if (!formData.city.trim()) newErrors.city = "City is required";
     if (!formData.state.trim()) newErrors.state = "State is required";
-    if (!formData.postalCode.trim()) newErrors.postalCode = "Postal code is required";
+    if (!formData.postalCode.trim())
+      newErrors.postalCode = "Postal code is required";
     if (!formData.country.trim()) newErrors.country = "Country is required";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -88,8 +102,11 @@ const Checkout = () => {
   };
 
   const handleProceed = async () => {
+    // ✅ clear old error message
+    setPlaceOrderError("");
+
     if (!validateForm()) {
-      alert("Please fill all required fields");
+      setPlaceOrderError("Please fill all required fields");
       return;
     }
 
@@ -109,45 +126,45 @@ const Checkout = () => {
       const orderResponse = await orderService.checkout({
         shippingAddress: trimmedFormData,
       });
-      alert("Order placed successfully!");
-      navigate("/payment", { 
-        state: { 
-          cartItems, 
-          totalAmount, 
+
+      // ✅ no alert - direct navigation
+      navigate("/payment", {
+        state: {
+          cartItems,
+          totalAmount,
           shippingAddress: trimmedFormData,
-          orderId: orderResponse.data?.orderId
-        } 
+          orderId: orderResponse.data?.orderId,
+        },
       });
     } catch (error) {
-      console.error("Checkout error details:", {
-        status: error.response?.status,
-        message: error.response?.data?.message,
-        data: error.response?.data,
-        error: error.message
-      });
-      const errorMessage = error.response?.data?.message || error.message || "Failed to place order. Please try again.";
-      alert(errorMessage);
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to place order. Please try again.";
+
+      // ✅ show below the button
+      setPlaceOrderError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-return (
+  return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
       {/* HEADER */}
       <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="h3" 
-          sx={{ 
-            fontWeight: 700, 
+        <Typography
+          variant="h3"
+          sx={{
+            fontWeight: 700,
             mb: 1,
-            color: "#1a1a1a"
+            color: "#1a1a1a",
           }}
         >
           🛍️ Checkout
         </Typography>
-        <Typography 
-          variant="body1" 
+        <Typography
+          variant="body1"
           color="textSecondary"
           sx={{ fontSize: "1.1rem" }}
         >
@@ -156,10 +173,7 @@ return (
       </Box>
 
       {/* PROGRESS INDICATOR */}
-      <Stepper 
-        activeStep={0} 
-        sx={{ mb: 4 }}
-      >
+      <Stepper activeStep={0} sx={{ mb: 4 }}>
         <Step completed>
           <StepLabel>Shipping Address</StepLabel>
         </Step>
@@ -170,14 +184,21 @@ return (
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={7}>
-          <Card sx={{ 
-            borderRadius: 2,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          }}>
+          <Card
+            sx={{
+              borderRadius: 2,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+          >
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <LocalShipping sx={{ mr: 1.5, color: "#1976d2", fontSize: "1.8rem" }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+                <LocalShipping
+                  sx={{ mr: 1.5, color: "#1976d2", fontSize: "1.8rem" }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "#1a1a1a" }}
+                >
                   Shipping Address
                 </Typography>
               </Box>
@@ -269,7 +290,7 @@ return (
                     label="Country"
                     fullWidth
                     variant="outlined"
-                    placeholder="United States"
+                    placeholder="India"
                     name="country"
                     value={formData.country}
                     onChange={handleInputChange}
@@ -312,21 +333,29 @@ return (
             <Box sx={{ mb: 2.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <ShoppingBag sx={{ mr: 1, color: "#1976d2" }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "#1a1a1a" }}
+                >
                   Order Summary
                 </Typography>
               </Box>
 
-              <Box sx={{ 
-                backgroundColor: "#fff",
-                p: 2,
-                borderRadius: 1,
-                mb: 2,
-                maxHeight: "300px",
-                overflowY: "auto"
-              }}>
+              <Box
+                sx={{
+                  backgroundColor: "#fff",
+                  p: 2,
+                  borderRadius: 1,
+                  mb: 2,
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                }}
+              >
                 {cartItems.length === 0 ? (
-                  <Typography color="textSecondary" sx={{ textAlign: "center", py: 2 }}>
+                  <Typography
+                    color="textSecondary"
+                    sx={{ textAlign: "center", py: 2 }}
+                  >
                     No items in cart
                   </Typography>
                 ) : (
@@ -344,18 +373,24 @@ return (
                           borderBottom: "none",
                           mb: 0,
                           pb: 0,
-                        }
+                        },
                       }}
                     >
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
                           {item.productName}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
                           Qty: {item.quantity}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: "#1976d2" }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 700, color: "#1976d2" }}
+                      >
                         ₹ {(item.price * item.quantity).toLocaleString()}
                       </Typography>
                     </Box>
@@ -367,20 +402,38 @@ return (
             <Divider sx={{ my: 2 }} />
 
             <Box sx={{ mb: 2 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1.5,
+                }}
+              >
                 <Typography fontWeight={600}>
                   ₹ {totalAmount.toLocaleString()}
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1.5,
+                }}
+              >
                 <Typography color="textSecondary">Shipping</Typography>
                 <Typography fontWeight={600} color="success.main">
                   Free
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1.5,
+                }}
+              >
                 <Typography color="textSecondary">Taxes</Typography>
                 <Typography fontWeight={600} color="textSecondary">
                   Calculated at payment
@@ -391,14 +444,23 @@ return (
             <Divider sx={{ my: 2 }} />
 
             {/* TOTAL */}
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                mb: 3,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: "#1a1a1a" }}
+              >
                 Total Amount
               </Typography>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  fontWeight: 700, 
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
                   color: "#1976d2",
                 }}
               >
@@ -425,12 +487,28 @@ return (
                 },
                 "&:disabled": {
                   background: "#ccc",
-                }
+                },
               }}
               startIcon={<CreditCard />}
             >
               {loading ? "Processing..." : "Place Order"}
             </Button>
+
+            {/* ✅ SIMPLE TEXT MESSAGE BELOW BUTTON */}
+            {placeOrderError && (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: -0.5,
+                  mb: 1.5,
+                  textAlign: "center",
+                  fontWeight: 600,
+                  color: "error.main",
+                }}
+              >
+                {placeOrderError}
+              </Typography>
+            )}
 
             <Button
               variant="outlined"
@@ -456,12 +534,18 @@ return (
                 borderRadius: 1,
               }}
             >
-              <Typography 
+              <Typography
                 variant="body2"
-                sx={{ color: "#2e7d32", lineHeight: 1.6, fontSize: "0.95rem" }}
+                sx={{
+                  color: "#2e7d32",
+                  lineHeight: 1.6,
+                  fontSize: "0.95rem",
+                }}
               >
-                ✓ Secure checkout<br/>
-                ✓ Your data is encrypted<br/>
+                ✓ Secure checkout
+                <br />
+                ✓ Your data is encrypted
+                <br />
                 ✓ Easy returns available
               </Typography>
             </Paper>

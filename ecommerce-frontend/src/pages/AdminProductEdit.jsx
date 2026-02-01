@@ -8,21 +8,40 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
   CircularProgress,
+  Paper,
+  Stack,
+  Divider,
+  InputAdornment,
+  IconButton,
+  Chip,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { productService, categoryService } from "../api/services";
 import { isAdmin } from "../utils/authUtils";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+
+const toTitleCase = (str = "") =>
+  str
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
 const AdminProductEdit = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const isCreate = !productId;
+
   const [loading, setLoading] = useState(!isCreate);
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -41,20 +60,23 @@ const AdminProductEdit = () => {
 
     const loadData = async () => {
       try {
-        // Load categories
         const categoryRes = await categoryService.getAllCategories();
         setCategories(categoryRes.data || []);
 
-        // Load product if editing
         if (!isCreate) {
           const productRes = await productService.getProductById(productId);
           const product = productRes.data;
+          
           setFormData({
             name: product.name || "",
             description: product.description || "",
-            price: product.price || "",
-            stock: product.stock || "",
-            categoryId: product.categoryId || "",
+            price: product.price ?? "",
+            stock: product.stock ?? "",
+            categoryId: product.categoryId
+              ? String(product.categoryId)
+              : product.category?.id
+              ? String(product.category.id)
+              : "",
             imageUrls: product.imageUrls?.join("\n") || "",
           });
         }
@@ -77,6 +99,13 @@ const AdminProductEdit = () => {
     }));
   };
 
+  const imageUrlCount = useMemo(() => {
+    return formData.imageUrls
+      .split("\n")
+      .map((u) => u.trim())
+      .filter(Boolean).length;
+  }, [formData.imageUrls]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -94,15 +123,15 @@ const AdminProductEdit = () => {
       setSubmitting(true);
 
       const submitData = {
-        name: formData.name,
-        description: formData.description,
+        name: formData.name.trim(),
+        description: formData.description?.trim() || "",
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         categoryId: parseInt(formData.categoryId),
         imageUrls: formData.imageUrls
           .split("\n")
           .map((url) => url.trim())
-          .filter((url) => url),
+          .filter(Boolean),
       };
 
       if (isCreate) {
@@ -138,120 +167,262 @@ const AdminProductEdit = () => {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 4 }}>
-        {isCreate ? "Create Product" : "Edit Product"}
-      </Typography>
-
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <TextField
-              label="Product Name *"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              fullWidth
-              required
-              size="small"
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <TextField
-              label="Description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={4}
-              size="small"
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Price *"
-              name="price"
-              type="number"
-              inputProps={{ step: "0.01" }}
-              value={formData.price}
-              onChange={handleChange}
-              fullWidth
-              required
-              size="small"
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Stock *"
-              name="stock"
-              type="number"
-              value={formData.stock}
-              onChange={handleChange}
-              fullWidth
-              required
-              size="small"
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small" required>
-              <InputLabel>Category *</InputLabel>
-              <Select
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                label="Category *"
-              >
-                <MenuItem value="">Select Category</MenuItem>
-                {categories.map((cat) => (
-                  <MenuItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12}>
-            <TextField
-              label="Image URLs (one per line)"
-              name="imageUrls"
-              value={formData.imageUrls}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={4}
-              size="small"
-              placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={submitting}
-                sx={{ flex: 1 }}
-              >
-                {submitting ? "Saving..." : isCreate ? "Create" : "Update"}
-              </Button>
-              <Button
-                variant="outlined"
+    <Container maxWidth="md" sx={{ py: { xs: 2.5, md: 4 } }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 14px 50px rgba(0,0,0,0.07)",
+          overflow: "hidden",
+        }}
+      >
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            gap={2}
+          >
+            <Stack direction="row" alignItems="center" gap={1.5}>
+              <IconButton
                 onClick={() => navigate("/products")}
-                disabled={submitting}
-                sx={{ flex: 1 }}
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  bgcolor: "rgba(0,0,0,0.02)",
+                }}
               >
-                Cancel
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
-      </form>
+                <ArrowBackRoundedIcon />
+              </IconButton>
+
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 900, letterSpacing: -0.4 }}
+                >
+                  {isCreate ? "Create Product" : "Edit Product"}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", mt: 0.25 }}
+                >
+                  {isCreate
+                    ? "Add a new product to your store catalog"
+                    : `Update product details (ID: ${productId})`}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" gap={1}>
+              <Chip
+                label={isCreate ? "New" : "Editing"}
+                variant="outlined"
+                sx={{
+                  borderRadius: 999,
+                  fontWeight: 800,
+                  bgcolor: "rgba(33,150,243,0.10)",
+                  borderColor: "rgba(33,150,243,0.35)",
+                }}
+              />
+              <Chip
+                label={`${imageUrlCount} image URL${
+                  imageUrlCount === 1 ? "" : "s"
+                }`}
+                variant="outlined"
+                sx={{
+                  borderRadius: 999,
+                  fontWeight: 800,
+                  bgcolor: "rgba(0,0,0,0.03)",
+                  borderColor: "rgba(0,0,0,0.12)",
+                }}
+              />
+            </Stack>
+          </Stack>
+        </Box>
+
+        <Divider />
+
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={2.5}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Product Name *"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  size="small"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  fullWidth
+                  multiline
+                  rows={4}
+                  size="small"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Price *"
+                  name="price"
+                  type="number"
+                  inputProps={{ step: "0.01", min: 0 }}
+                  value={formData.price}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AttachMoneyRoundedIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Stock *"
+                  name="stock"
+                  type="number"
+                  inputProps={{ min: 0 }}
+                  value={formData.stock}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Inventory2OutlinedIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl fullWidth size="small" required>
+                  <Select
+                    name="categoryId"
+                    value={formData.categoryId}
+                    onChange={handleChange}
+                    displayEmpty
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: "rgba(0,0,0,0.02)",
+                      "& .MuiSelect-select": {
+                        fontWeight: 700,
+                        color: formData.categoryId
+                          ? "inherit"
+                          : "text.secondary",
+                      },
+                    }}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          borderRadius: 2,
+                          mt: 1,
+                          border: "1px solid rgba(0,0,0,0.08)",
+                          boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
+                        },
+                      },
+                    }}
+                    renderValue={(selected) => {
+                      if (!selected) return "Select Category";
+                      const cat = categories.find(
+                        (c) => String(c.id) === String(selected)
+                      );
+                      return cat ? toTitleCase(cat.name) : "Select Category";
+                    }}
+                  >
+                    <MenuItem value="" disabled>
+                      Select Category
+                    </MenuItem>
+
+                    {categories.map((cat) => (
+                      <MenuItem key={cat.id} value={String(cat.id)}>
+                        {toTitleCase(cat.name)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Image URLs (one per line)"
+                  name="imageUrls"
+                  value={formData.imageUrls}
+                  onChange={handleChange}
+                  fullWidth
+                  multiline
+                  rows={5}
+                  size="small"
+                  placeholder={
+                    "https://example.com/image1.jpg\nhttps://example.com/image2.jpg"
+                  }
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <ImageOutlinedIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Stack direction={{ xs: "column", sm: "row" }} gap={1.5}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={submitting}
+                    sx={{
+                      flex: 1,
+                      borderRadius: 2,
+                      fontWeight: 900,
+                      py: 1.1,
+                    }}
+                  >
+                    {submitting
+                      ? "Saving..."
+                      : isCreate
+                      ? "Create Product"
+                      : "Update Product"}
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate("/products")}
+                    disabled={submitting}
+                    sx={{
+                      flex: 1,
+                      borderRadius: 2,
+                      fontWeight: 900,
+                      py: 1.1,
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
+      </Paper>
     </Container>
   );
 };

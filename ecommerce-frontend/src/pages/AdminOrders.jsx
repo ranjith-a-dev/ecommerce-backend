@@ -7,37 +7,132 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Typography,
   Box,
   Pagination,
   Select,
   MenuItem,
   CircularProgress,
-  Grid,
   FormControl,
   InputLabel,
+  Chip,
+  Stack,
+  Divider,
+  IconButton,
+  Tooltip,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { adminOrderService } from "../api/services";
 import { isAdmin } from "../utils/authUtils";
 import { useNavigate } from "react-router-dom";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+
+const STATUS_LABELS = {
+  CREATED: "Created",
+  PAYMENT_PENDING: "Payment Pending",
+  PAID: "Paid",
+  SHIPPED: "Shipped",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+  REFUND_INITIATED: "Refund Initiated",
+  REFUNDED: "Refunded",
+};
+
+const STATUS_COLORS = {
+  CREATED: { text: "#616161" },
+  PAYMENT_PENDING: { text: "#e65100" },
+  PAID: { text: "#1565c0" },
+  SHIPPED: { text: "#006064" },
+  DELIVERED: { text: "#1b5e20" },
+  CANCELLED: { text: "#b71c1c" },
+  REFUND_INITIATED: { text: "#e65100" },
+  REFUNDED: { text: "#1b5e20" },
+};
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return "—";
+  return `₹ ${Number(value).toLocaleString("en-IN")}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString();
+};
+
+const StatusChip = ({ status }) => {
+  const palette = STATUS_COLORS[status] || STATUS_COLORS.CREATED;
+  const label = STATUS_LABELS[status] || status || "—";
+
+  return (
+    <Chip
+      label={label}
+      variant="outlined"
+      sx={{
+        height: 28,
+        borderRadius: 999,
+        fontWeight: 900,
+        fontSize: "0.78rem",
+        letterSpacing: 0.2,
+        color: palette.text,
+        borderColor: "rgba(0,0,0,0.15)",
+        bgcolor: "rgba(0,0,0,0.02)",
+      }}
+    />
+  );
+};
+
+const RefundChip = ({ refundRequested }) => {
+  if (!refundRequested) {
+    return (
+      <Chip
+        label="No"
+        variant="outlined"
+        sx={{
+          height: 28,
+          borderRadius: 999,
+          fontWeight: 900,
+          fontSize: "0.78rem",
+          bgcolor: "rgba(76,175,80,0.10)",
+          borderColor: "rgba(76,175,80,0.35)",
+          color: "#1b5e20",
+        }}
+      />
+    );
+  }
+
+  return (
+    <Chip
+      label="Yes"
+      variant="outlined"
+      sx={{
+        height: 28,
+        borderRadius: 999,
+        fontWeight: 900,
+        fontSize: "0.78rem",
+        bgcolor: "rgba(255,111,0,0.10)",
+        borderColor: "rgba(255,111,0,0.35)",
+        color: "#e65100",
+      }}
+    />
+  );
+};
 
 const AdminOrders = () => {
   const navigate = useNavigate();
+
   const [orders, setOrders] = useState([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [openDetails, setOpenDetails] = useState(false);
+
   const [statusFilter, setStatusFilter] = useState("");
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [detailsError, setDetailsError] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!isAdmin()) {
@@ -45,7 +140,6 @@ const AdminOrders = () => {
       navigate("/");
       return;
     }
-
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter]);
@@ -53,16 +147,17 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
+
       const filters = {};
-      if (statusFilter) {
-        filters.status = statusFilter;
-      }
+      if (statusFilter) filters.status = statusFilter;
+
       const res = await adminOrderService.getAllOrders(page - 1, 10, filters);
+
       setOrders(res.data.content || []);
       setTotalPages(res.data.totalPages || 1);
     } catch (error) {
       console.error("Failed to fetch orders", error);
-      alert("Failed to load orders");
+      alert(error.response?.data?.message || "Failed to load orders");
       setOrders([]);
       setTotalPages(1);
     } finally {
@@ -70,53 +165,19 @@ const AdminOrders = () => {
     }
   };
 
-  const handleViewDetails = async (order) => {
-    try {
-      setDetailsError(null);
-      // Fetch full order details
-      const res = await adminOrderService.getAdminOrderById(order.orderId);
-      setSelectedOrder(res.data);
-      setOpenDetails(true);
-    } catch (error) {
-      console.error("Failed to load order details:", error);
-      setDetailsError(
-        error.response?.data?.message || "Failed to load order details"
-      );
-      setSelectedOrder(order); // Show what we have from table at least
-      setOpenDetails(true);
-    }
-  };
+  // ✅ Search only by Order ID / User ID / Username (NOT status)
+  const filteredOrders = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return orders;
 
-  const handleUpdateStatus = async (orderId, newStatus) => {
-    try {
-      setUpdatingStatus(true);
-      await adminOrderService.updateOrderStatus(orderId, newStatus);
-      setSelectedOrder((prev) => ({
-        ...prev,
-        status: newStatus,
-      }));
-      alert("Order status updated successfully");
-      fetchOrders();
-    } catch (error) {
-      alert(error.response?.data?.message || "Failed to update order status");
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
+    return orders.filter((o) => {
+      const orderId = String(o.orderId ?? "").toLowerCase();
+      const userId = String(o.userId ?? "").toLowerCase();
+      const username = String(o.userBasicDTO?.username ?? "").toLowerCase();
 
-  const getStatusColor = (status) => {
-    const colors = {
-      CREATED: "#9e9e9e",
-      PAYMENT_PENDING: "#ff9800",
-      PAID: "#2196f3",
-      SHIPPED: "#00bcd4",
-      DELIVERED: "#4caf50",
-      CANCELLED: "#f44336",
-      REFUND_INITIATED: "#ff6f00",
-      REFUNDED: "#388e3c",
-    };
-    return colors[status] || "#666";
-  };
+      return orderId.includes(q) || userId.includes(q) || username.includes(q);
+    });
+  }, [orders, search]);
 
   if (loading && orders.length === 0) {
     return (
@@ -134,449 +195,255 @@ const AdminOrders = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{ fontWeight: 700, mb: 4, color: "#1a1a1a" }}
-      >
-        Orders Management
-      </Typography>
-
-      {/* FILTERS */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Filter by Status</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              label="Filter by Status"
-              sx={{ backgroundColor: "white" }}
-            >
-              <MenuItem value="">All Status</MenuItem>
-              <MenuItem value="CREATED">Created</MenuItem>
-              <MenuItem value="PAYMENT_PENDING">Payment Pending</MenuItem>
-              <MenuItem value="PAID">Paid</MenuItem>
-              <MenuItem value="SHIPPED">Shipped</MenuItem>
-              <MenuItem value="DELIVERED">Delivered</MenuItem>
-              <MenuItem value="CANCELLED">Cancelled</MenuItem>
-              <MenuItem value="REFUND_INITIATED">Refund Initiated</MenuItem>
-              <MenuItem value="REFUNDED">Refunded</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
-
-      {/* ORDERS TABLE */}
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table>
-          <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Order ID</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>User ID</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Total Amount</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Refund Status</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Order Date</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {orders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                  No orders found
-                </TableCell>
-              </TableRow>
-            ) : (
-              orders.map((order) => (
-                <TableRow
-                  key={order.orderId}
-                  sx={{
-                    "&:hover": { bgcolor: "#f9f9f9" },
-                    backgroundColor: order.refundRequested
-                      ? "#fff3e0"
-                      : "inherit",
-                  }}
-                >
-                  <TableCell>#{order.orderId}</TableCell>
-                  <TableCell>{order.userId}</TableCell>
-                  <TableCell>₹ {order.totalAmount?.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Typography
-                      sx={{
-                        color: getStatusColor(order.status),
-                        fontWeight: 600,
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      {order.status}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {order.refundRequested ? (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            backgroundColor: "#ff6f00",
-                            color: "white",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                          }}
-                        >
-                          🔴 Refund Requested
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography
-                        sx={{ color: "#999", fontSize: "0.9rem" }}
-                      >
-                        —
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {order.createdAt
-                      ? new Date(order.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleViewDetails(order)}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* PAGINATION */}
-      {totalPages > 1 && (
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(e, value) => setPage(value)}
-            color="primary"
-          />
-        </Box>
-      )}
-
-      {/* ORDER DETAILS DIALOG */}
-      <Dialog
-        open={openDetails}
-        onClose={() => {
-          setOpenDetails(false);
-          setSelectedOrder(null);
-          setDetailsError(null);
-        }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Order Details - #{selectedOrder?.orderId}</DialogTitle>
-        <DialogContent>
-          {detailsError && (
-            <Box
-              sx={{
-                p: 2,
-                backgroundColor: "#ffebee",
-                borderRadius: 1,
-                mb: 2,
-                color: "#c62828",
-              }}
-            >
-              <Typography variant="body2">{detailsError}</Typography>
-            </Box>
-          )}
-
-          {selectedOrder && (
-            <Box sx={{ py: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  <strong>Order ID:</strong>
-                </Typography>
-                <Typography variant="body1">#{selectedOrder.orderId}</Typography>
-              </Box>
-
-              {/* Make all fields read-only if status is REFUNDED or CANCELLED */}
-              {["REFUNDED", "CANCELLED"].includes(selectedOrder.status) ? (
-                <Box sx={{ opacity: 0.6, pointerEvents: "none" }}>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>User ID:</strong>
-                    </Typography>
-                    <Typography variant="body1">{selectedOrder.userId}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Total Amount:</strong>
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ color: "#1976d2", fontWeight: 600 }}
-                    >
-                      ₹ {selectedOrder.totalAmount?.toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Current Status:</strong>
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: getStatusColor(selectedOrder.status),
-                        fontWeight: 600,
-                      }}
-                    >
-                      {selectedOrder.status}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Shipping Address:</strong>
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedOrder.shippingAddress}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Order Date:</strong>
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedOrder.createdAt
-                        ? new Date(selectedOrder.createdAt).toLocaleString()
-                        : "N/A"}
-                    </Typography>
-                  </Box>
-                </Box>
-              ) : (
-                <>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>User ID:</strong>
-                    </Typography>
-                    <Typography variant="body1">{selectedOrder.userId}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Total Amount:</strong>
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ color: "#1976d2", fontWeight: 600 }}
-                    >
-                      ₹ {selectedOrder.totalAmount?.toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Current Status:</strong>
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: getStatusColor(selectedOrder.status),
-                        fontWeight: 600,
-                      }}
-                    >
-                      {selectedOrder.status}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Shipping Address:</strong>
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedOrder.shippingAddress}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Order Date:</strong>
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedOrder.createdAt
-                        ? new Date(selectedOrder.createdAt).toLocaleString()
-                        : "N/A"}
-                    </Typography>
-                  </Box>
-                </>
-              )}
-
-              <Box
+    <Box sx={{ bgcolor: "rgba(0,0,0,0.015)", minHeight: "calc(100vh - 64px)" }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2.5, md: 4 } }}>
+        {/* HEADER */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2.2, md: 3 },
+            mb: 3,
+            borderRadius: 4,
+            bgcolor: "rgba(255,255,255,0.92)",
+            border: "1px solid rgba(0,0,0,0.08)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            alignItems={{ xs: "flex-start", md: "center" }}
+            justifyContent="space-between"
+            gap={2}
+          >
+            <Box>
+              <Typography
+                variant="h4"
                 sx={{
-                  p: 2,
-                  backgroundColor: selectedOrder.refundRequested
-                    ? "#fff3e0"
-                    : "#f5f5f5",
-                  borderRadius: 1,
-                  borderLeft: `4px solid ${
-                    selectedOrder.refundRequested ? "#ff6f00" : "#4caf50"
-                  }`,
+                  fontWeight: 900,
+                  letterSpacing: -0.3,
+                  color: "#111827",
                 }}
               >
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  <strong>Refund Status:</strong>
-                </Typography>
-                <Box
+                Orders
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mt: 0.5,
+                  fontWeight: 700,
+                }}
+              >
+                Manage and track customer orders
+              </Typography>
+            </Box>
+
+            {/* ✅ Search + Filter Labels */}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              gap={1.6}
+              alignItems="flex-end"
+              sx={{ width: { xs: "100%", md: "auto" } }}
+            >
+              {/* SEARCH */}
+              <Box sx={{ width: { xs: "100%", sm: 360 } }}>
+                <Typography
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    fontSize: "0.78rem",
+                    fontWeight: 900,
+                    color: "text.secondary",
+                    mb: 0.6,
                   }}
                 >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: selectedOrder.refundRequested ? "#ff6f00" : "#4caf50",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {selectedOrder.refundRequested
-                      ? "🔴 Refund Requested"
-                      : "✓ No Refund Request"}
-                  </Typography>
-                  {selectedOrder.refundRequested && (
-                    <Typography variant="caption" sx={{ color: "#666" }}>
-                      Awaiting admin action
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-
-              {/* ✅ STATUS UPDATE SECTION (UPDATED) */}
-              <Box sx={{ mt: 3, pt: 2, borderTop: "1px solid #eee" }}>
-                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                  Update Order Status:
+                  Search
                 </Typography>
 
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {["SHIPPED", "DELIVERED", "CANCELLED", "REFUND_INITIATED", "REFUNDED"].map(
-                    (status) => {
-                      // ✅ Disable everything by default
-                      let disabled = true;
+                <TextField
+                  size="small"
+                  placeholder="Order ID / User ID / Username..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchRoundedIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
 
-                      // ✅ CREATED -> enable only CANCELLED
-                      if (selectedOrder.status === "CREATED") {
-                        disabled = status !== "CANCELLED";
-                      }
+              {/* FILTER */}
+              <Box sx={{ width: { xs: "100%", sm: 220 } }}>
+                <Typography
+                  sx={{
+                    fontSize: "0.78rem",
+                    fontWeight: 900,
+                    color: "text.secondary",
+                    mb: 0.6,
+                  }}
+                >
+                  Filter by Status
+                </Typography>
 
-                      // ✅ PAYMENT_PENDING -> enable only CANCELLED
-                      if (selectedOrder.status === "PAYMENT_PENDING") {
-                        disabled = status !== "CANCELLED";
-                      }
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setPage(1);
+                      setSearch("");
+                    }}
+                    label="Status"
+                  >
+                    <MenuItem value="">All Status</MenuItem>
+                    <MenuItem value="CREATED">Created</MenuItem>
+                    <MenuItem value="PAYMENT_PENDING">Payment Pending</MenuItem>
+                    <MenuItem value="PAID">Paid</MenuItem>
+                    <MenuItem value="SHIPPED">Shipped</MenuItem>
+                    <MenuItem value="DELIVERED">Delivered</MenuItem>
+                    <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                                       <MenuItem value="REFUND_INITIATED">Refund Initiated</MenuItem>
+                    <MenuItem value="REFUNDED">Refunded</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </Stack>
+          </Stack>
 
-                      // ✅ PAID -> enable SHIPPED and CANCELLED
-                      if (selectedOrder.status === "PAID") {
-                          disabled = !["SHIPPED", "CANCELLED"].includes(status);
-                      }
+          <Divider sx={{ mt: 2.5 }} />
+        </Paper>
 
+        {/* TABLE */}
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 4,
+            border: "1px solid rgba(0,0,0,0.08)",
+            overflow: "hidden",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.06)",
+            bgcolor: "rgba(255,255,255,0.92)",
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "rgba(0,0,0,0.03)" }}>
+                  <TableCell sx={{ fontWeight: 900 }}>Order</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }}>User</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }}>Total</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }}>Refund</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }} align="right">
+                    Actions
+                  </TableCell>
+                </TableRow>
+              </TableHead>
 
-                      // ✅ SHIPPED -> enable only DELIVERED
-                      if (selectedOrder.status === "SHIPPED") {
-                        disabled = status !== "DELIVERED";
-                      }
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                      <Typography sx={{ fontWeight: 900, mb: 0.5 }}>
+                        No orders found
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.secondary", fontWeight: 700 }}
+                      >
+                        Try different Order ID / User ID / Username
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <TableRow
+                      key={order.orderId}
+                      hover
+                      sx={{
+                        "& td": { py: 1.6 },
+                      }}
+                    >
+                      <TableCell sx={{ fontWeight: 900 }}>
+                        #{order.orderId}
+                      </TableCell>
 
-                      // ✅ DELIVERED -> disable all
-                      if (selectedOrder.status === "DELIVERED") {
-                        if (selectedOrder.refundRequested) {
-                          disabled = status !== "REFUND_INITIATED";
-                        } else {
-                          // ❌ no refund request -> disable all
-                          disabled = true;
-                        }
-                      }
-
-                      // ✅ CANCELLED -> disable all
-                      if (selectedOrder.status === "CANCELLED") {
-                        disabled = true;
-                      }
-
-                      // ✅ REFUND_INITIATED -> enable only REFUNDED
-                      if (selectedOrder.status === "REFUND_INITIATED") {
-                        disabled = status !== "REFUNDED";
-                      }
-
-                      // ✅ REFUNDED -> disable all
-                      if (selectedOrder.status === "REFUNDED") {
-                        disabled = true;
-                      }
-
-                      // ✅ Also disable if updating
-                      disabled = disabled || updatingStatus;
-
-                      return (
-                        <Button
-                          key={status}
-                          variant={
-                            selectedOrder.status === status ? "contained" : "outlined"
-                          }
-                          size="small"
-                          onClick={() =>
-                            handleUpdateStatus(selectedOrder.orderId, status)
-                          }
-                          disabled={disabled}
+                      <TableCell>
+                        <Typography sx={{ fontWeight: 900, color: "#111827" }}>
+                          {order.userBasicDTO?.username || "—"}
+                        </Typography>
+                        <Typography
                           sx={{
-                            backgroundColor:
-                              selectedOrder.status === status
-                                ? getStatusColor(status)
-                                : "transparent",
-                            color:
-                              selectedOrder.status === status
-                                ? "white"
-                                : getStatusColor(status),
-                            borderColor: getStatusColor(status),
-                            "&:hover": {
-                              backgroundColor:
-                                selectedOrder.status === status
-                                  ? getStatusColor(status)
-                                  : "transparent",
-                            },
+                            fontWeight: 700,
+                            fontSize: "0.85rem",
+                            color: "text.secondary",
+                            mt: 0.2,
                           }}
                         >
-                          {status}
-                        </Button>
-                      );
-                    }
-                  )}
-                </Box>
-              </Box>
+                          ID: {order.userId ?? "—"}
+                        </Typography>
+                      </TableCell>
+
+                      <TableCell sx={{ fontWeight: 900 }}>
+                        {formatCurrency(order.totalAmount)}
+                      </TableCell>
+
+                      <TableCell>
+                        <StatusChip status={order.status} />
+                      </TableCell>
+
+                      <TableCell>
+                        <RefundChip refundRequested={order.refundRequested} />
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          color: "text.secondary",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {formatDate(order.createdAt)}
+                      </TableCell>
+
+                      <TableCell align="right">
+                        <Tooltip title="View Details">
+                          <IconButton
+                            onClick={() =>
+                              navigate(`/admin/orders/${order.orderId}`)
+                            }
+                            sx={{
+                              borderRadius: 2,
+                              border: "1px solid rgba(0,0,0,0.12)",
+                              bgcolor: "rgba(0,0,0,0.02)",
+                            }}
+                          >
+                            <VisibilityOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {totalPages > 1 && (
+            <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(e, value) => setPage(value)}
+                color="primary"
+              />
             </Box>
           )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setOpenDetails(false);
-              setSelectedOrder(null);
-            }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 

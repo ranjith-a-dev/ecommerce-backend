@@ -1,12 +1,12 @@
-// Utility to decode JWT and extract user info
 export const decodeToken = () => {
   const token = localStorage.getItem("token");
-  
   if (!token) return null;
 
   try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split("")
@@ -14,39 +14,47 @@ export const decodeToken = () => {
         .join("")
     );
 
-    const decoded = JSON.parse(jsonPayload);
-    return decoded;
+    return JSON.parse(jsonPayload);
   } catch (error) {
     console.error("Failed to decode token:", error);
     return null;
   }
 };
 
+export const isTokenExpired = () => {
+  const decoded = decodeToken();
+  if (!decoded?.exp) return true;
+
+  const now = Math.floor(Date.now() / 1000);
+  return decoded.exp < now;
+};
+
+export const isLoggedIn = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return false;
+  return !isTokenExpired();
+};
+
 export const isAdmin = () => {
   const decoded = decodeToken();
   if (!decoded) return false;
-  
-  // Check if authorities array exists and contains ROLE_ADMIN
+
   if (decoded.authorities && Array.isArray(decoded.authorities)) {
     return decoded.authorities.includes("ROLE_ADMIN");
   }
-  
+
   return false;
 };
 
 export const getUserRole = () => {
   const decoded = decodeToken();
   if (!decoded || !decoded.authorities) return null;
-  
+
   if (Array.isArray(decoded.authorities) && decoded.authorities.length > 0) {
     return decoded.authorities[0];
   }
-  
-  return null;
-};
 
-export const isLoggedIn = () => {
-  return !!localStorage.getItem("token");
+  return null;
 };
 
 export const logout = () => {
