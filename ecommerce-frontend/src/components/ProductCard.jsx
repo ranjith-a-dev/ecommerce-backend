@@ -15,13 +15,17 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { cartService, productService } from "../api/services";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { isAdmin } from "../utils/authUtils";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 
 const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
+
+  const location = useLocation();
+  const token = localStorage.getItem("token");
+
   const navigate = useNavigate();
   const isUserAdmin = isAdmin();
 
@@ -38,6 +42,16 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
 
   const handleAdd = async () => {
     clearMsg();
+
+    if (!token) {
+      setMsg({ text: "Please login to add items to cart", type: "error" });
+
+      setTimeout(() => {
+        navigate("/login", { state: { from: location.pathname } });
+      }, 800);
+
+      return;
+    }
 
     if (adding || outOfStock || addedToCart) return;
 
@@ -56,6 +70,7 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
       setAdding(false);
     }
   };
+
 
   const handleDelete = async () => {
     clearMsg();

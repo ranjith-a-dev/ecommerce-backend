@@ -36,6 +36,10 @@ const Register = () => {
     type: "", // "error" | "success"
   });
 
+  const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+
   const handleRegister = async () => {
     setMsg({ text: "", type: "" });
 
@@ -44,8 +48,11 @@ const Register = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setMsg({ text: "Password must be at least 6 characters", type: "error" });
+    if (!passwordRegex.test(password)) {
+      setMsg({
+        text: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character (@$!%*?&)",
+        type: "error",
+      });
       return;
     }
 

@@ -19,13 +19,28 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const token = localStorage.getItem("token");
+
+  const getRoleFromToken = () => {
+    try {
+      if (!token) return "";
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const authorities = payload?.authorities || [];
+      return authorities[0] || "";
+    } catch {
+      return "";
+    }
+  };
+
+  const role = getRoleFromToken();
+  const isAdmin = role === "ROLE_ADMIN";
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
 
   const [msg, setMsg] = useState({ text: "", type: "" });
 
-  // ✅ NEW: already in cart state
   const [alreadyInCart, setAlreadyInCart] = useState(false);
   const [checkingCart, setCheckingCart] = useState(false);
 
@@ -34,12 +49,24 @@ const ProductDetails = () => {
     productService
       .getProductById(id)
       .then((res) => setProduct(res.data))
-      .catch(() => setProduct(null))
+      .catch((err) => {
+  console.log("GET PRODUCT ERROR:", err.response?.status, err.response?.data);
+  setProduct(null);
+})
+
       .finally(() => setLoading(false));
   }, [id]);
 
-  // ✅ NEW: check if product already in cart
   useEffect(() => {
+    if (isAdmin) return;
+
+    // ✅ Guest user - don't call cart API
+    if (!token) {
+      setAlreadyInCart(false);
+      setCheckingCart(false);
+      return;
+    }
+
     const checkCart = async () => {
       try {
         setCheckingCart(true);
@@ -59,16 +86,22 @@ const ProductDetails = () => {
     };
 
     checkCart();
-  }, [id]);
+  }, [id, isAdmin, token]);
+
 
   const handleAddToCart = async () => {
+
+    if (!token) {
+      setMsg({ text: "Please login to add items to cart", type: "error" });
+      setTimeout(() => navigate("/login"), 700);
+      return;
+    }
+
     setMsg({ text: "", type: "" });
 
     try {
       setAddingToCart(true);
       await cartService.addToCart(product.id, 1);
-
-      // ✅ update UI instantly
       setAlreadyInCart(true);
     } catch (error) {
       setMsg({
@@ -148,7 +181,6 @@ const ProductDetails = () => {
 
   const inStock = Number(product.stock || 0) > 0;
 
-  // ✅ disable add to cart when already in cart / checking cart / adding
   const disableAddToCart =
     !inStock || addingToCart || alreadyInCart || checkingCart;
 
@@ -263,91 +295,96 @@ const ProductDetails = () => {
                 {product.description || "No description available."}
               </Typography>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  flexWrap: "wrap",
-                  mt: 2.5,
-                }}
-              >
-                <Chip
-                  icon={<LocalShippingRoundedIcon />}
-                  label="Fast delivery"
+              {!isAdmin && (
+                <Box
                   sx={{
-                    borderRadius: 999,
-                    fontWeight: 800,
-                    bgcolor: "rgba(78,84,200,0.08)",
-                    color: "#4e54c8",
-                  }}
-                />
-                <Chip
-                  icon={<SecurityRoundedIcon />}
-                  label="Secure payment"
-                  sx={{
-                    borderRadius: 999,
-                    fontWeight: 800,
-                    bgcolor: "rgba(78,84,200,0.08)",
-                    color: "#4e54c8",
-                  }}
-                />
-              </Box>
-
-              <Box sx={{ mt: 3 }}>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  disabled={disableAddToCart}
-                  onClick={handleAddToCart}
-                  startIcon={
-                    addingToCart || checkingCart ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <ShoppingCartRoundedIcon />
-                    )
-                  }
-                  sx={{
-                    borderRadius: 3,
-                    fontWeight: 900,
-                    textTransform: "none",
-                    py: 1.35,
-                    background:
-                      !inStock || alreadyInCart
-                        ? "linear-gradient(90deg, rgba(148,163,184,0.9) 0%, rgba(203,213,225,0.9) 100%)"
-                        : "linear-gradient(90deg, #4e54c8 0%, #8f94fb 100%)",
-                    boxShadow: "0 2px 12px rgba(78,84,200,0.18)",
+                    display: "flex",
+                    gap: 1,
+                    flexWrap: "wrap",
+                    mt: 2.5,
                   }}
                 >
-                  {checkingCart
-                    ? "Checking..."
-                    : addingToCart
-                    ? "Adding..."
-                    : alreadyInCart
-                    ? "Added to Cart"
-                    : "Add to Cart"}
-                </Button>
-
-                {/* ✅ OPTIONAL: show go to cart button when already in cart */}
-                {alreadyInCart && (
-                  <Button
-                    variant="outlined"
-                    fullWidth
+                  <Chip
+                    icon={<LocalShippingRoundedIcon />}
+                    label="Fast delivery"
                     sx={{
-                      mt: 1.4,
-                      borderRadius: 3,
-                      fontWeight: 900,
-                      textTransform: "none",
-                      borderColor: "rgba(78,84,200,0.35)",
+                      borderRadius: 999,
+                      fontWeight: 800,
+                      bgcolor: "rgba(78,84,200,0.08)",
                       color: "#4e54c8",
-                      "&:hover": {
-                        borderColor: "rgba(78,84,200,0.55)",
-                        bgcolor: "rgba(78,84,200,0.06)",
-                      },
                     }}
-                    onClick={() => navigate("/carts")}
-                  >
-                    Go to Cart
-                  </Button>
+                  />
+                  <Chip
+                    icon={<SecurityRoundedIcon />}
+                    label="Secure payment"
+                    sx={{
+                      borderRadius: 999,
+                      fontWeight: 800,
+                      bgcolor: "rgba(78,84,200,0.08)",
+                      color: "#4e54c8",
+                    }}
+                  />
+                </Box>
+              )}
+
+              <Box sx={{ mt: 3 }}>
+                {!isAdmin && (
+                  <>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      disabled={disableAddToCart}
+                      onClick={handleAddToCart}
+                      startIcon={
+                        addingToCart || checkingCart ? (
+                          <CircularProgress size={18} color="inherit" />
+                        ) : (
+                          <ShoppingCartRoundedIcon />
+                        )
+                      }
+                      sx={{
+                        borderRadius: 3,
+                        fontWeight: 900,
+                        textTransform: "none",
+                        py: 1.35,
+                        background:
+                          !inStock || alreadyInCart
+                            ? "linear-gradient(90deg, rgba(148,163,184,0.9) 0%, rgba(203,213,225,0.9) 100%)"
+                            : "linear-gradient(90deg, #4e54c8 0%, #8f94fb 100%)",
+                        boxShadow: "0 2px 12px rgba(78,84,200,0.18)",
+                      }}
+                    >
+                      {checkingCart
+                        ? "Checking..."
+                        : addingToCart
+                        ? "Adding..."
+                        : alreadyInCart
+                        ? "Added to Cart"
+                        : "Add to Cart"}
+                    </Button>
+
+                    {alreadyInCart && (
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        sx={{
+                          mt: 1.4,
+                          borderRadius: 3,
+                          fontWeight: 900,
+                          textTransform: "none",
+                          borderColor: "rgba(78,84,200,0.35)",
+                          color: "#4e54c8",
+                          "&:hover": {
+                            borderColor: "rgba(78,84,200,0.55)",
+                            bgcolor: "rgba(78,84,200,0.06)",
+                          },
+                        }}
+                        onClick={() => navigate("/carts")}
+                      >
+                        Go to Cart
+                      </Button>
+                    )}
+                  </>
                 )}
 
                 {msg.text && (
