@@ -35,6 +35,33 @@ const formatCurrency = (value) => {
   return `₹ ${Number(value).toLocaleString("en-IN")}`;
 };
 
+const SummaryRow = ({ label, value, bold = false }) => {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 3,
+        py: 0.8,
+      }}
+    >
+      <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
+        {label}
+      </Typography>
+
+      <Typography
+        sx={{
+          fontWeight: bold ? 900 : 800,
+          fontSize: bold ? "1.05rem" : "0.98rem",
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+};
+
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -64,7 +91,8 @@ const OrderDetails = () => {
     return order.items.reduce((sum, it) => sum + Number(it.itemTotal || 0), 0);
   }, [order]);
 
-  const showPayButton = order?.status === "CREATED" || order?.status === "PAYMENT_PENDING";
+  const showPayButton =
+    order?.status === "CREATED" || order?.status === "PAYMENT_PENDING";
 
   const handleRetryPayment = () => {
     navigate("/payment", {
@@ -103,9 +131,14 @@ const OrderDetails = () => {
             Order not found ❌
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-            The order you are trying to view may not exist or you may not have access.
+            The order you are trying to view may not exist or you may not have
+            access.
           </Typography>
-          <Button variant="contained" onClick={() => navigate("/orders")} sx={{ borderRadius: 2, fontWeight: 900 }}>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/orders")}
+            sx={{ borderRadius: 2, fontWeight: 900 }}
+          >
             Back to Orders
           </Button>
         </Paper>
@@ -113,10 +146,14 @@ const OrderDetails = () => {
     );
   }
 
-  const statusMeta = STATUS_UI[order.status] || { label: order.status, variant: "outlined" };
+  const statusMeta = STATUS_UI[order.status] || {
+    label: order.status,
+    variant: "outlined",
+  };
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 3, md: 4 } }}>
+      {/* HEADER */}
       <Paper
         elevation={0}
         sx={{
@@ -127,46 +164,64 @@ const OrderDetails = () => {
           boxShadow: "0 14px 50px rgba(0,0,0,0.06)",
         }}
       >
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={2}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          gap={2}
+        >
           <Box>
             <Stack direction="row" alignItems="center" gap={1}>
               <ReceiptLongRoundedIcon />
-              <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: -0.4 }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 900, letterSpacing: -0.4 }}
+              >
                 Order Details
               </Typography>
             </Stack>
-            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.4 }}>
+
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mt: 0.4, fontWeight: 700 }}
+            >
               Order ID: <b>#{order.orderId}</b>
             </Typography>
           </Box>
 
           <Stack direction="row" alignItems="center" gap={1}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "text.secondary" }}>
+              Status :
+            </Typography>
+
             <Chip
               label={statusMeta.label}
               variant={statusMeta.variant}
-              color={order.status === "CANCELLED" ? "error" : order.status === "DELIVERED" ? "success" : "primary"}
+              color={
+                order.status === "CANCELLED"
+                  ? "error"
+                  : order.status === "DELIVERED"
+                  ? "success"
+                  : "primary"
+              }
               sx={{
                 borderRadius: 999,
                 fontWeight: 900,
                 px: 0.7,
               }}
             />
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/orders")}
-              sx={{ borderRadius: 2, fontWeight: 900 }}
-            >
-              Back
-            </Button>
           </Stack>
         </Stack>
       </Paper>
 
-      <Grid container spacing={2.5}>
+      {/* CONTENT */}
+      <Grid container spacing={2.5} alignItems="stretch">
+        {/* ITEMS CARD */}
         <Grid item xs={12} md={7}>
           <Card
             elevation={0}
             sx={{
+              height: "100%",
               borderRadius: 3,
               border: "1px solid rgba(0,0,0,0.08)",
               boxShadow: "0 14px 50px rgba(0,0,0,0.06)",
@@ -191,13 +246,48 @@ const OrderDetails = () => {
                       bgcolor: "rgba(0,0,0,0.02)",
                     }}
                   >
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={2}>
-                      <Box>
-                        <Typography sx={{ fontWeight: 900 }}>{item.productName}</Typography>
-                        <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.2 }}>
-                          Qty: <b>{item.quantity}</b>
-                        </Typography>
-                      </Box>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      gap={2}
+                    >
+              
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Box
+                          component="img"
+                          src={item.imageUrl || "/placeholder.png"}
+                          alt={item.productName}
+                          sx={{
+                            width: 55,
+                            height: 55,
+                            borderRadius: 2,
+                            objectFit: "cover",
+                            border: "1px solid rgba(0,0,0,0.10)",
+                            backgroundColor: "#fff",
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.png";
+                          }}
+                        />
+
+                        <Box>
+                          <Typography sx={{ fontWeight: 900 }}>
+                            {item.productName}
+                          </Typography>
+
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "text.secondary",
+                              mt: 0.2,
+                              fontWeight: 700,
+                            }}
+                          >
+                            Qty: <b>{item.quantity}</b>
+                          </Typography>
+                        </Box>
+                      </Stack>
 
                       <Typography sx={{ fontWeight: 900 }}>
                         {formatCurrency(item.itemTotal)}
@@ -214,6 +304,7 @@ const OrderDetails = () => {
           <Card
             elevation={0}
             sx={{
+              height: "100%",
               borderRadius: 3,
               border: "1px solid rgba(0,0,0,0.08)",
               boxShadow: "0 14px 50px rgba(0,0,0,0.06)",
@@ -227,19 +318,16 @@ const OrderDetails = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Stack spacing={1.2}>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>Items Subtotal</Typography>
-                  <Typography sx={{ fontWeight: 900 }}>{formatCurrency(itemsSubtotal)}</Typography>
-                </Stack>
+              <SummaryRow
+                label="Items Subtotal"
+                value={formatCurrency(itemsSubtotal)}
+              />
 
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>Total Amount</Typography>
-                  <Typography sx={{ fontWeight: 900, fontSize: "1.1rem" }}>
-                    {formatCurrency(order.totalAmount)}
-                  </Typography>
-                </Stack>
-              </Stack>
+              <SummaryRow
+                label="Total Amount"
+                value={formatCurrency(order.totalAmount)}
+                bold
+              />
 
               {showPayButton && (
                 <>
@@ -250,7 +338,13 @@ const OrderDetails = () => {
                     variant="contained"
                     color="success"
                     onClick={handleRetryPayment}
-                    startIcon={order.status === "CREATED" ? <PaymentsRoundedIcon /> : <ReplayRoundedIcon />}
+                    startIcon={
+                      order.status === "CREATED" ? (
+                        <PaymentsRoundedIcon />
+                      ) : (
+                        <ReplayRoundedIcon />
+                      )
+                    }
                     sx={{
                       borderRadius: 2,
                       fontWeight: 900,
@@ -261,7 +355,16 @@ const OrderDetails = () => {
                     {order.status === "CREATED" ? "Pay Now" : "Retry Payment"}
                   </Button>
 
-                  <Typography variant="caption" sx={{ display: "block", mt: 1.2, color: "text.secondary", textAlign: "center" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      mt: 1.2,
+                      color: "text.secondary",
+                      textAlign: "center",
+                      fontWeight: 700,
+                    }}
+                  >
                     Complete payment to confirm your order
                   </Typography>
                 </>

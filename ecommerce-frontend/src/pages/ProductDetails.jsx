@@ -70,12 +70,6 @@ const ProductDetails = () => {
 
       // ✅ update UI instantly
       setAlreadyInCart(true);
-
-      setMsg({ text: "Added to cart successfully ✅", type: "success" });
-
-      setTimeout(() => {
-        navigate("/carts");
-      }, 900);
     } catch (error) {
       setMsg({
         text: error.response?.data?.message || "Failed to add to cart",
@@ -329,7 +323,7 @@ const ProductDetails = () => {
                     : addingToCart
                     ? "Adding..."
                     : alreadyInCart
-                    ? "Already in Cart"
+                    ? "Added to Cart"
                     : "Add to Cart"}
                 </Button>
 

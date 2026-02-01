@@ -192,7 +192,6 @@ const AdminOrderDetails = () => {
   return (
     <Box sx={{ bgcolor: "rgba(0,0,0,0.015)", minHeight: "calc(100vh - 64px)" }}>
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, md: 4 } }}>
-        {/* HEADER */}
         <Paper
           elevation={0}
           sx={{
@@ -218,32 +217,29 @@ const AdminOrderDetails = () => {
                 Order #{order.orderId}
               </Typography>
             </Box>
+            <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{ mt: 1 }}
+                >
+                <Typography
+                    sx={{
+                    fontWeight: 900,
+                    fontSize: "0.95rem",
+                    color: "text.secondary",
+                    }}
+                >
+                    Status :&nbsp;&nbsp;
+                </Typography>
 
-            <Stack direction="row" alignItems="center" gap={1.2} flexWrap="wrap">
-              <StatusChip status={order.status} />
-
-              <Button
-                variant="outlined"
-                sx={{
-                  fontWeight: 900,
-                  borderRadius: 2.5,
-                  textTransform: "none",
-                  borderColor: "rgba(0,0,0,0.15)",
-                  color: "#111827",
-                  bgcolor: "rgba(0,0,0,0.02)",
-                  "&:hover": {
-                    bgcolor: "rgba(0,0,0,0.04)",
-                  },
-                }}
-                onClick={() => navigate("/admin/orders")}
-              >
-                Back to Orders
-              </Button>
+                <Box>
+                    <StatusChip status= {order.status} />
+                </Box>
             </Stack>
           </Stack>
         </Paper>
 
-        {/* MAIN BODY */}
         <Paper
           elevation={0}
           sx={{
@@ -254,7 +250,6 @@ const AdminOrderDetails = () => {
             bgcolor: "rgba(255,255,255,0.92)",
           }}
         >
-          {/* Order Info */}
           <SectionTitle title="Order Info" />
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
@@ -272,7 +267,6 @@ const AdminOrderDetails = () => {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Customer */}
           <SectionTitle title="Customer (Account)" />
           <Paper
             elevation={0}
@@ -301,7 +295,6 @@ const AdminOrderDetails = () => {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Delivery */}
           <SectionTitle title="Delivery Details" />
           <Paper
             elevation={0}
@@ -341,7 +334,6 @@ const AdminOrderDetails = () => {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Items */}
           <SectionTitle title="Items in this Order" />
           {order.items?.length ? (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.2 }}>
@@ -407,7 +399,6 @@ const AdminOrderDetails = () => {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Status update */}
           <SectionTitle title="Update Order Status" />
 
           <Stack direction="row" gap={1} flexWrap="wrap">

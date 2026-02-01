@@ -165,7 +165,6 @@ const AdminOrders = () => {
     }
   };
 
-  // ✅ Search only by Order ID / User ID / Username (NOT status)
   const filteredOrders = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return orders;
@@ -197,7 +196,6 @@ const AdminOrders = () => {
   return (
     <Box sx={{ bgcolor: "rgba(0,0,0,0.015)", minHeight: "calc(100vh - 64px)" }}>
       <Container maxWidth="xl" sx={{ py: { xs: 2.5, md: 4 } }}>
-        {/* HEADER */}
         <Paper
           elevation={0}
           sx={{
@@ -238,14 +236,12 @@ const AdminOrders = () => {
               </Typography>
             </Box>
 
-            {/* ✅ Search + Filter Labels */}
             <Stack
               direction={{ xs: "column", sm: "row" }}
               gap={1.6}
               alignItems="flex-end"
               sx={{ width: { xs: "100%", md: "auto" } }}
             >
-              {/* SEARCH */}
               <Box sx={{ width: { xs: "100%", sm: 360 } }}>
                 <Typography
                   sx={{
@@ -274,7 +270,6 @@ const AdminOrders = () => {
                 />
               </Box>
 
-              {/* FILTER */}
               <Box sx={{ width: { xs: "100%", sm: 220 } }}>
                 <Typography
                   sx={{
@@ -305,7 +300,7 @@ const AdminOrders = () => {
                     <MenuItem value="SHIPPED">Shipped</MenuItem>
                     <MenuItem value="DELIVERED">Delivered</MenuItem>
                     <MenuItem value="CANCELLED">Cancelled</MenuItem>
-                                       <MenuItem value="REFUND_INITIATED">Refund Initiated</MenuItem>
+                    <MenuItem value="REFUND_INITIATED">Refund Initiated</MenuItem>
                     <MenuItem value="REFUNDED">Refunded</MenuItem>
                   </Select>
                 </FormControl>
@@ -315,8 +310,7 @@ const AdminOrders = () => {
 
           <Divider sx={{ mt: 2.5 }} />
         </Paper>
-
-        {/* TABLE */}
+        
         <Paper
           elevation={0}
           sx={{
@@ -335,7 +329,7 @@ const AdminOrders = () => {
                   <TableCell sx={{ fontWeight: 900 }}>User</TableCell>
                   <TableCell sx={{ fontWeight: 900 }}>Total</TableCell>
                   <TableCell sx={{ fontWeight: 900 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 900 }}>Refund</TableCell>
+                  <TableCell sx={{ fontWeight: 900 }}>Refund Request</TableCell>
                   <TableCell sx={{ fontWeight: 900 }}>Date</TableCell>
                   <TableCell sx={{ fontWeight: 900 }} align="right">
                     Actions

@@ -44,7 +44,7 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
     try {
       setAdding(true);
       await cartService.addToCart(product.id, 1);
-      setMsg({ text: "Added to cart ✅", type: "success" });
+      setMsg({ text: "Added to cart", type: "success" });
       refreshCart?.();
     } catch (err) {
       setMsg({
@@ -302,7 +302,7 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
                     : "linear-gradient(90deg, #4e54c8 0%, #8f94fb 100%)",
               }}
             >
-              {outOfStock ? "Out of Stock" : addedToCart ? "Added" : "Add to Cart"}
+              {outOfStock ? "Out of Stock" : addedToCart ? "Added to cart" : "Add to Cart"}
             </Button>
           </Box>
         )}
