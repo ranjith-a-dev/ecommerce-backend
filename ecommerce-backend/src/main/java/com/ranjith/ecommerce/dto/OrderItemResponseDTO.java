@@ -11,4 +11,5 @@ public class OrderItemResponseDTO {
     private int quantity;
     private BigDecimal priceAtPurchase;
     private BigDecimal itemTotal;
+    private String imageUrl;
 }

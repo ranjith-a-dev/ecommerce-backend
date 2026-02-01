@@ -211,6 +211,8 @@ public class OrderService {
             throw new CannotCancelOrderException("Refund allowed only for DELIVERED orders");
 
         order.setRefundRequested(true);
+        order.setStatus(OrderStatus.REFUND_INITIATED);
+
         return mapToUserSummaryDto(orderRepo.save(order));
     }
 
@@ -295,6 +297,9 @@ public class OrderService {
             itemDto.setProductName(item.getProduct().getName());
             itemDto.setQuantity(item.getQuantity());
             itemDto.setPriceAtPurchase(item.getPriceAtPurchase());
+            itemDto.setImageUrl((item.getProduct().getImageUrls() != null && !item.getProduct().getImageUrls().isEmpty())
+                    ? item.getProduct().getImageUrls().get(0)
+                    : null);
 
             BigDecimal itemTotal = item.getPriceAtPurchase()
                     .multiply(BigDecimal.valueOf(item.getQuantity()));
