@@ -293,6 +293,27 @@ public class OrderService {
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setUpdatedAt(order.getUpdatedAt());
+
+        ShippingAddressDTO shipDto = null;
+
+        if (order.getShippingAddresses() != null && !order.getShippingAddresses().isEmpty()) {
+            ShippingAddress s = order.getShippingAddresses().get(0);
+
+            shipDto = new ShippingAddressDTO(
+                s.getFullName(),
+                s.getPhoneNumber(),
+                s.getStreetAddress(),
+                s.getCity(),
+                s.getState(),
+                s.getPostalCode(),
+                s.getCountry(),
+                s.getDeliveryInstructions()
+            );
+        }
+
+        dto.setShippingAddress(shipDto);
+
 
         List<OrderItemResponseDTO> items = order.getOrderItems().stream().map(item -> {
 
@@ -331,6 +352,7 @@ public class OrderService {
         dto.setStatus(order.getStatus());
         dto.setTotalItems(totalItems);
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setUpdatedAt(order.getUpdatedAt());
 
         return dto;
     }

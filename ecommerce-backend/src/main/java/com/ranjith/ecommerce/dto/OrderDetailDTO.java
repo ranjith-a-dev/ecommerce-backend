@@ -16,4 +16,6 @@ public class OrderDetailDTO {
     private OrderStatus status;
     private LocalDateTime createdAt;
     private List<OrderItemResponseDTO> items;
+    private LocalDateTime updatedAt;
+    private ShippingAddressDTO shippingAddress;
 }

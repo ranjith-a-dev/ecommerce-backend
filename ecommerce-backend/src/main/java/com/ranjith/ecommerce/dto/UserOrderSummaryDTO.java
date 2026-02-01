@@ -15,4 +15,5 @@ public class UserOrderSummaryDTO {
     private OrderStatus status;
     private int totalItems;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
