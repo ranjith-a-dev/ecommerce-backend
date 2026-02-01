@@ -2,6 +2,7 @@ package com.ranjith.ecommerce.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.ranjith.ecommerce.enums.OrderStatus;
 
@@ -21,4 +22,7 @@ public class AdminOrderSummaryDTO {
     private int totalItems;
     private boolean refundRequested;
     private LocalDateTime createdAt;
+    private ShippingAddressDTO shippingAddressDTO;
+    private UserBasicDTO userBasicDTO;
+    private List<AdminOrderItemDTO> items;
 }

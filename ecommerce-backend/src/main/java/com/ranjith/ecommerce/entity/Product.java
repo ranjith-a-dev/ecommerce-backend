@@ -57,4 +57,7 @@ public class Product {
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "image_url", nullable = false)
     private List<String> imageUrls;
+
+    @Column(nullable = false)
+    private boolean active = true;
 }

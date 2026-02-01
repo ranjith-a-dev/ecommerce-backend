@@ -24,30 +24,37 @@ import com.ranjith.ecommerce.service.CartItemService;
 public class CartItemController {
 
     @Autowired
-    CartItemService cartItemService;
+    private CartItemService cartItemService;
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @PostMapping
-    public ResponseEntity<CartItemResponseDTO> addToCart(@RequestParam Long productId,@RequestParam int quantity){
+    public ResponseEntity<CartItemResponseDTO> addToCart(
+            @RequestParam Long productId,
+            @RequestParam int quantity) {
+
         CartItemResponseDTO response = cartItemService.addToCart(productId, quantity);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping
-    public ResponseEntity<List<CartItemResponseDTO>> getMyCart(){
+    public ResponseEntity<List<CartItemResponseDTO>> getMyCart() {
         return ResponseEntity.ok(cartItemService.getMyCart());
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @PutMapping("/{productId}")
-    public ResponseEntity<CartItemResponseDTO> updateCartItem(@PathVariable Long productId,@RequestParam int quantity){
+    public ResponseEntity<CartItemResponseDTO> updateCartItem(
+            @PathVariable Long productId,
+            @RequestParam int quantity) {
+
         return ResponseEntity.ok(cartItemService.updateCartItem(productId, quantity));
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @DeleteMapping("/{productId}")
-    public ResponseEntity<ApiResponseDTO> deleteCartItem(@PathVariable Long productId){
+    public ResponseEntity<ApiResponseDTO> deleteCartItem(@PathVariable Long productId) {
+
         cartItemService.deleteCartItem(productId);
         return ResponseEntity.ok(new ApiResponseDTO("Cart item deleted successfully"));
     }

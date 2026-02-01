@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ranjith.ecommerce.dto.ProductRequestDTO;
 import com.ranjith.ecommerce.dto.ProductResponseDTO;
@@ -26,17 +27,22 @@ public class ProductService {
     @Autowired
     protected CategoryRepo categoryRepo;
 
-    private ProductResponseDTO toResponseDTO(Product product){
+    private ProductResponseDTO toResponseDTO(Product product) {
+        ProductResponseDTO dto = new ProductResponseDTO();
 
-        return new ProductResponseDTO(
-            product.getId(),
-            product.getName(),
-            product.getDescription(),
-            product.getPrice(),
-            product.getStock(),
-            product.getImageUrls()
-        );
+        dto.setId(product.getId());
+        dto.setName(product.getName());
+        dto.setDescription(product.getDescription());
+        dto.setPrice(product.getPrice());
+        dto.setStock(product.getStock());
+
+        dto.setCategoryId(product.getCategory() != null ? product.getCategory().getId() : null);
+
+        dto.setImageUrls(product.getImageUrls());
+
+        return dto;
     }
+
 
     public ProductResponseDTO createProduct(ProductRequestDTO dto) {
 
@@ -97,8 +103,12 @@ public class ProductService {
         return toResponseDTO(productRepo.save(product));
     }
 
+    @Transactional
     public void deleteProduct(Long id) {
-        Product product = productRepo.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
-        productRepo.delete(product);
-    }
+        Product product = productRepo.findById(id)
+            .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+
+        product.setActive(false); 
+        productRepo.save(product);
+    }   
 }
