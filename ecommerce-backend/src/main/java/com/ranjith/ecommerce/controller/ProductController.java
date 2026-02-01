@@ -52,7 +52,6 @@ public class ProductController {
         return ResponseEntity.ok(service.getAllProducts(pageable,categoryId,name,minPrice,maxPrice,inStock));
     }
 
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponseDTO> getProductById(@PathVariable Long id){
         return ResponseEntity.ok(service.getProductById(id));

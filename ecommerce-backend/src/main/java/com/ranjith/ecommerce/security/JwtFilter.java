@@ -1,8 +1,11 @@
 package com.ranjith.ecommerce.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,11 +18,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
-public class JwtFilter extends OncePerRequestFilter{
+public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -27,66 +28,79 @@ public class JwtFilter extends OncePerRequestFilter{
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-    protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain filterChain) throws IOException, ServletException{
-
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
+        String method = request.getMethod();
 
-        if(path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui.html")){
-            filterChain.doFilter(request,response);
-            return;
+        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui.html")) {
+            return true;
         }
+
+        if (path.startsWith("/api/auth")) {
+            return true;
+        }
+
+        if (HttpMethod.GET.matches(method) && path.startsWith("/api/products")) {
+            return true;
+        }
+
+        if (HttpMethod.GET.matches(method) && path.startsWith("/api/categories")) {
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws IOException, ServletException {
 
         String authHeader = request.getHeader("Authorization");
 
-        String username = null;
-        String token = null;
-
-        if(authHeader != null && authHeader.startsWith("Bearer ")){
-            token = authHeader.substring(7).trim();
-            try{
-                username = jwtUtil.extractUsername(token);
-            }
-            catch(Exception e){
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Invalid or expired Jwt\"}"
-                );
-                return;
-            }
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        if(username != null && SecurityContextHolder.getContext().getAuthentication() == null){
+        String token = authHeader.substring(7).trim();
+        String username;
+
+        try {
+            username = jwtUtil.extractUsername(token);
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Invalid or expired Jwt\"}");
+            return;
+        }
+
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            
-            if(jwtUtil.validateToken(token,userDetails)){
-                // Extract authorities from JWT token
+
+            if (jwtUtil.validateToken(token, userDetails)) {
+
                 List<String> tokenAuthorities = jwtUtil.extractAuthorities(token);
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                
-                if(!tokenAuthorities.isEmpty()) {
-                    // Use authorities from JWT token
-                    for(String auth : tokenAuthorities) {
+
+                if (tokenAuthorities != null && !tokenAuthorities.isEmpty()) {
+                    for (String auth : tokenAuthorities) {
                         authorities.add(new SimpleGrantedAuthority(auth));
                     }
                 } else {
-                    // Fallback to authorities from UserDetails if JWT doesn't contain them
-                    userDetails.getAuthorities().forEach(a -> authorities.add(new SimpleGrantedAuthority(a.getAuthority())));
+                    userDetails.getAuthorities()
+                            .forEach(a -> authorities.add(new SimpleGrantedAuthority(a.getAuthority())));
                 }
-                
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,null,authorities);
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request){
-        return request.getServletPath().startsWith("/api/auth");
     }
 }

@@ -277,6 +277,10 @@ public class OrderService {
         }
 
         order.setStatus(newStatus);
+
+        if (newStatus == OrderStatus.REFUNDED)
+            order.setRefundRequested(false);
+
         return mapToUserSummaryDto(orderRepo.save(order));
     }
 
