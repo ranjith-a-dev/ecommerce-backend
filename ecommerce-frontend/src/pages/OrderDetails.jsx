@@ -6,65 +6,85 @@ import {
   Divider,
   Box,
   Chip,
-  Button,
-  CircularProgress,
-  Stack,
   Paper,
-  Grid,
+  Stack,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
 } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { orderService } from "../api/services";
-import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
-import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
-import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-
-const STATUS_UI = {
-  CREATED: { label: "Created", variant: "outlined" },
-  PAYMENT_PENDING: { label: "Payment Pending", variant: "outlined" },
-  PAID: { label: "Paid", variant: "filled" },
-  SHIPPED: { label: "Shipped", variant: "filled" },
-  DELIVERED: { label: "Delivered", variant: "filled" },
-  CANCELLED: { label: "Cancelled", variant: "outlined" },
-  REFUND_INITIATED: { label: "Refund Initiated", variant: "outlined" },
-  REFUNDED: { label: "Refunded", variant: "filled" },
-};
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined) return "—";
   return `₹ ${Number(value).toLocaleString("en-IN")}`;
 };
 
-const SummaryRow = ({ label, value, bold = false }) => {
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
+const STATUS_UI = {
+  CREATED: { label: "Created", color: "default" },
+  PAYMENT_PENDING: { label: "Payment Pending", color: "warning" },
+  PAID: { label: "Paid", color: "primary" },
+  SHIPPED: { label: "Shipped", color: "info" },
+  DELIVERED: { label: "Delivered", color: "success" },
+  CANCELLED: { label: "Cancelled", color: "error" },
+  REFUND_INITIATED: { label: "Refund Initiated", color: "warning" },
+  REFUNDED: { label: "Refunded", color: "success" },
+};
+
+const InfoBox = ({ title, value }) => {
   return (
-    <Box
+    <Paper
+      elevation={0}
       sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 3,
-        py: 0.8,
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: 2.2,
+        px: 2,
+        py: 1.2,
+        minWidth: 170,
       }}
     >
-      <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
-        {label}
-      </Typography>
-
       <Typography
         sx={{
-          fontWeight: bold ? 900 : 800,
-          fontSize: bold ? "1.05rem" : "0.98rem",
+          fontSize: "0.72rem",
+          fontWeight: 900,
+          color: "text.secondary",
+          letterSpacing: 0.6,
         }}
       >
-        {value}
+        {title}
       </Typography>
-    </Box>
+      <Typography sx={{ fontWeight: 900, mt: 0.4 }}>{value}</Typography>
+    </Paper>
   );
 };
 
-const OrderDetails = () => {
+const SectionTitle = ({ title }) => {
+  return (
+    <Typography sx={{ fontWeight: 900, mb: 1.4, fontSize: "0.95rem" }}>
+      {title}
+    </Typography>
+  );
+};
+
+const AdminOrderDetails = () => {
   const { orderId } = useParams();
-  const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -75,8 +95,8 @@ const OrderDetails = () => {
         setLoading(true);
         const res = await orderService.getOrderById(orderId);
         setOrder(res.data);
-      } catch (err) {
-        console.error("Failed to load order", err);
+      } catch (e) {
+        console.error("Admin order fetch error", e);
         setOrder(null);
       } finally {
         setLoading(false);
@@ -86,295 +106,228 @@ const OrderDetails = () => {
     fetchOrder();
   }, [orderId]);
 
+  const statusMeta = STATUS_UI[order?.status] || {
+    label: order?.status || "—",
+    color: "default",
+  };
+
   const itemsSubtotal = useMemo(() => {
     if (!order?.items?.length) return 0;
     return order.items.reduce((sum, it) => sum + Number(it.itemTotal || 0), 0);
   }, [order]);
 
-  const showPayButton =
-    order?.status === "CREATED" || order?.status === "PAYMENT_PENDING";
-
-  const handleRetryPayment = () => {
-    navigate("/payment", {
-      state: {
-        cartItems: order.items,
-        totalAmount: order.totalAmount,
-        shippingAddress: order.shippingAddress,
-        orderId: order.orderId,
-      },
-    });
-  };
-
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <CircularProgress />
-        </Box>
-      </Container>
+      <Box sx={{ py: 6, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (!order) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 3,
-            border: "1px solid rgba(0,0,0,0.08)",
-            textAlign: "center",
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
-            Order not found ❌
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-            The order you are trying to view may not exist or you may not have
-            access.
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => navigate("/orders")}
-            sx={{ borderRadius: 2, fontWeight: 900 }}
-          >
-            Back to Orders
-          </Button>
-        </Paper>
+      <Container maxWidth="lg" sx={{ py: 4, px: { xs: 2, md: 5 } }}>
+        <Typography sx={{ fontWeight: 900 }}>Order not found ❌</Typography>
       </Container>
     );
   }
 
-  const statusMeta = STATUS_UI[order.status] || {
-    label: order.status,
-    variant: "outlined",
-  };
-
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 3, md: 4 } }}>
-      {/* HEADER */}
-      <Paper
+    <Container maxWidth="lg" sx={{ py: 4, px: { xs: 2, md: 5 } }}>
+      {/* HEADER CARD */}
+      <Card
         elevation={0}
         sx={{
-          p: { xs: 2, md: 3 },
-          mb: 3,
           borderRadius: 3,
           border: "1px solid rgba(0,0,0,0.08)",
-          boxShadow: "0 14px 50px rgba(0,0,0,0.06)",
+          mb: 2,
         }}
       >
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          gap={2}
-        >
-          <Box>
-            <Stack direction="row" alignItems="center" gap={1}>
-              <ReceiptLongRoundedIcon />
+        <CardContent sx={{ px: 3, py: 2.4 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            gap={2}
+          >
+            <Box>
               <Typography
-                variant="h5"
-                sx={{ fontWeight: 900, letterSpacing: -0.4 }}
+                variant="h4"
+                sx={{
+                  fontWeight: 900,
+                  fontSize: { xs: "1.35rem", sm: "1.6rem", md: "1.85rem" },
+                }}
               >
                 Order Details
+            </Typography>
+
+
+            </Box>
+
+            <Stack direction="row" alignItems="center" gap={1}>
+              <Typography sx={{ fontWeight: 800, color: "text.secondary" }}>
+                Status :
               </Typography>
+              <Chip
+                label={statusMeta.label}
+                color={statusMeta.color}
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 900 }}
+              />
             </Stack>
-
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 0.4, fontWeight: 700 }}
-            >
-              Order ID: <b>#{order.orderId}</b>
-            </Typography>
-          </Box>
-
-          <Stack direction="row" alignItems="center" gap={1}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "text.secondary" }}>
-              Status :
-            </Typography>
-
-            <Chip
-              label={statusMeta.label}
-              variant={statusMeta.variant}
-              color={
-                order.status === "CANCELLED"
-                  ? "error"
-                  : order.status === "DELIVERED"
-                  ? "success"
-                  : "primary"
-              }
-              sx={{
-                borderRadius: 999,
-                fontWeight: 900,
-                px: 0.7,
-              }}
-            />
           </Stack>
-        </Stack>
-      </Paper>
+        </CardContent>
+      </Card>
 
-      {/* CONTENT */}
-      <Grid container spacing={2.5} alignItems="stretch">
-        {/* ITEMS CARD */}
-        <Grid item xs={12} md={7}>
-          <Card
+      {/* MAIN CARD */}
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+        }}
+      >
+        <CardContent sx={{ px: 3, py: 3 }}>
+          {/* Order Info */}
+          <SectionTitle title="Order Info" />
+
+          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+            <InfoBox title="ORDER ID" value={`#${order.orderId}`} />
+            <InfoBox title="TOTAL AMOUNT" value={formatCurrency(order.totalAmount)} />
+            <InfoBox title="CREATED AT" value={formatDateTime(order.createdAt)} />
+          </Stack>
+
+          <Divider sx={{ my: 3 }} />
+
+        
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Delivery Details */}
+          <SectionTitle title="Delivery Details" />
+
+          <Paper
             elevation={0}
             sx={{
-              height: "100%",
-              borderRadius: 3,
               border: "1px solid rgba(0,0,0,0.08)",
-              boxShadow: "0 14px 50px rgba(0,0,0,0.06)",
+              borderRadius: 2.2,
+              px: 2,
+              py: 1.6,
+            }}
+          >
+            <Typography sx={{ fontWeight: 900 }}>
+              {order?.shippingAddress?.fullName || "—"}
+            </Typography>
+
+            <Typography sx={{ color: "text.secondary", fontWeight: 700, mt: 0.6 }}>
+              Phone: {order?.shippingAddress?.phoneNumber || "—"}
+            </Typography>
+
+            <Typography sx={{ fontWeight: 700, mt: 1 }}>
+              {order?.shippingAddress
+                ? `${order.shippingAddress.streetAddress}, ${order.shippingAddress.city}, ${order.shippingAddress.state}, ${order.shippingAddress.country} - ${order.shippingAddress.postalCode}`
+                : "No shipping address"}
+            </Typography>
+          </Paper>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Items */}
+          <SectionTitle title="Items in this Order" />
+
+          <Paper
+            elevation={0}
+            sx={{
+              border: "1px solid rgba(0,0,0,0.08)",
+              borderRadius: 2.2,
               overflow: "hidden",
             }}
           >
-            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
-                Items
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Stack spacing={1.4}>
+            <Table size="small">
+              <TableBody>
                 {order.items?.map((item) => (
-                  <Box
-                    key={item.productId}
-                    sx={{
-                      p: 1.6,
-                      borderRadius: 2,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      bgcolor: "rgba(0,0,0,0.02)",
-                    }}
-                  >
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      gap={2}
-                    >
-              
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Box
-                          component="img"
-                          src={item.imageUrl || "/placeholder.png"}
-                          alt={item.productName}
-                          sx={{
-                            width: 55,
-                            height: 55,
-                            borderRadius: 2,
-                            objectFit: "cover",
-                            border: "1px solid rgba(0,0,0,0.10)",
-                            backgroundColor: "#fff",
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = "/placeholder.png";
-                          }}
-                        />
+                  <TableRow key={item.productId}>
+                    <TableCell sx={{ width: 70 }}>
+                      <Box
+                        component="img"
+                        src={item.imageUrl || "/placeholder.png"}
+                        alt={item.productName}
+                        sx={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 2,
+                          objectFit: "cover",
+                          border: "1px solid rgba(0,0,0,0.08)",
+                          backgroundColor: "#fff",
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.png";
+                        }}
+                      />
+                    </TableCell>
 
-                        <Box>
-                          <Typography sx={{ fontWeight: 900 }}>
-                            {item.productName}
-                          </Typography>
+                    <TableCell>
+                      <Typography sx={{ fontWeight: 900 }}>
+                        {item.productName}
+                      </Typography>
+                      <Typography sx={{ color: "text.secondary", fontWeight: 700, fontSize: "0.85rem" }}>
+                        Product ID: {item.productId}
+                      </Typography>
+                    </TableCell>
 
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "text.secondary",
-                              mt: 0.2,
-                              fontWeight: 700,
-                            }}
-                          >
-                            Qty: <b>{item.quantity}</b>
-                          </Typography>
-                        </Box>
-                      </Stack>
-
+                    <TableCell align="right">
+                      <Typography sx={{ fontWeight: 900 }}>
+                        Qty: {item.quantity}
+                      </Typography>
                       <Typography sx={{ fontWeight: 900 }}>
                         {formatCurrency(item.itemTotal)}
                       </Typography>
-                    </Stack>
-                  </Box>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+              </TableBody>
+            </Table>
+          </Paper>
 
-        <Grid item xs={12} md={5}>
-          <Card
+          <Divider sx={{ my: 3 }} />
+
+          {/* Payment Summary small */}
+          <SectionTitle title="Payment Summary" />
+
+          <Paper
             elevation={0}
             sx={{
-              height: "100%",
-              borderRadius: 3,
               border: "1px solid rgba(0,0,0,0.08)",
-              boxShadow: "0 14px 50px rgba(0,0,0,0.06)",
-              overflow: "hidden",
+              borderRadius: 2.2,
+              px: 2,
+              py: 1.4,
             }}
           >
-            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
-                Payment Summary
+            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.6 }}>
+              <Typography sx={{ color: "text.secondary", fontWeight: 800 }}>
+                Items Subtotal
               </Typography>
+              <Typography sx={{ fontWeight: 900 }}>
+                {formatCurrency(itemsSubtotal)}
+              </Typography>
+            </Stack>
 
-              <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1 }} />
 
-              <SummaryRow
-                label="Items Subtotal"
-                value={formatCurrency(itemsSubtotal)}
-              />
-
-              <SummaryRow
-                label="Total Amount"
-                value={formatCurrency(order.totalAmount)}
-                bold
-              />
-
-              {showPayButton && (
-                <>
-                  <Divider sx={{ my: 2.2 }} />
-
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    color="success"
-                    onClick={handleRetryPayment}
-                    startIcon={
-                      order.status === "CREATED" ? (
-                        <PaymentsRoundedIcon />
-                      ) : (
-                        <ReplayRoundedIcon />
-                      )
-                    }
-                    sx={{
-                      borderRadius: 2,
-                      fontWeight: 900,
-                      py: 1.2,
-                      textTransform: "none",
-                    }}
-                  >
-                    {order.status === "CREATED" ? "Pay Now" : "Retry Payment"}
-                  </Button>
-
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: "block",
-                      mt: 1.2,
-                      color: "text.secondary",
-                      textAlign: "center",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Complete payment to confirm your order
-                  </Typography>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.6 }}>
+              <Typography sx={{ color: "text.secondary", fontWeight: 900 }}>
+                Total Amount
+              </Typography>
+              <Typography sx={{ fontWeight: 900 }}>
+                {formatCurrency(order.totalAmount)}
+              </Typography>
+            </Stack>
+          </Paper>
+        </CardContent>
+      </Card>
     </Container>
   );
 };
 
-export default OrderDetails;
+export default AdminOrderDetails;

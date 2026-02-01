@@ -65,6 +65,20 @@ const formatDateLong = (value) => {
   });
 };
 
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+
 const Orders = () => {
   const navigate = useNavigate();
 
@@ -133,7 +147,7 @@ const Orders = () => {
 
   useEffect(() => {
     fetchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const getChipColor = (status) => {
@@ -186,11 +200,13 @@ const Orders = () => {
         try {
           setRefundLoading((prev) => ({ ...prev, [orderId]: true }));
           await orderService.requestRefund(orderId);
+
           setOrders((prev) =>
             prev.map((o) =>
               o.orderId === orderId ? { ...o, refundRequested: true } : o
             )
           );
+
           showToast("Refund request submitted successfully", "success");
           await fetchOrders();
         } catch (err) {
@@ -294,7 +310,6 @@ const Orders = () => {
           </Box>
         </Stack>
 
-
         <Divider sx={{ my: 2.5 }} />
 
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -367,10 +382,8 @@ const Orders = () => {
                     <Typography sx={{ fontWeight: 900, fontSize: "1.05rem" }}>
                       Order #{order.orderId}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "text.secondary", mt: 0.2 }}
-                    >
+
+                    <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.2 }}>
                       Placed on {formatDateLong(order.createdAt)}
                     </Typography>
                   </Box>
@@ -407,9 +420,7 @@ const Orders = () => {
                 >
                   <Stack spacing={1}>
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography
-                        sx={{ color: "text.secondary", fontWeight: 700 }}
-                      >
+                      <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
                         Total Items
                       </Typography>
                       <Typography sx={{ fontWeight: 900 }}>
@@ -418,9 +429,7 @@ const Orders = () => {
                     </Stack>
 
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography
-                        sx={{ color: "text.secondary", fontWeight: 700 }}
-                      >
+                      <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
                         Order Amount
                       </Typography>
                       <Typography sx={{ fontWeight: 900 }}>
@@ -429,9 +438,7 @@ const Orders = () => {
                     </Stack>
 
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography
-                        sx={{ color: "text.secondary", fontWeight: 700 }}
-                      >
+                      <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
                         Order Date
                       </Typography>
                       <Typography sx={{ fontWeight: 900 }}>
@@ -448,21 +455,49 @@ const Orders = () => {
                   gap={1.2}
                   sx={{ mt: 2 }}
                 >
-                  <Button
-                    variant="outlined"
-                    startIcon={<VisibilityOutlinedIcon />}
-                    onClick={() => navigate(`/orders/${order.orderId}`)}
-                    sx={{ borderRadius: 2, fontWeight: 900, textTransform: "none" }}
-                  >
-                    View Details
-                  </Button>
-
                   <Stack
                     direction="row"
-                    gap={1}
-                    flexWrap="wrap"
-                    justifyContent="flex-end"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap={2}
+                    sx={{ mt: 1.6 }}
                   >
+                    <Button
+                      variant="outlined"
+                      startIcon={<VisibilityOutlinedIcon />}
+                      onClick={() => navigate(`/orders/${order.orderId}`)}
+                      sx={{
+                        borderRadius: 2,
+                        fontWeight: 900,
+                        textTransform: "none",
+                        px: 2.2,
+                        py: 0.9,
+                        minWidth: 150,
+                      }}
+                    >
+                      View Details
+                    </Button>
+
+                    {order.updatedAt && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.secondary",
+                          px: 1,
+                          py: 0.6,
+                          borderRadius: 2,
+                          bgcolor: "rgba(0,0,0,0.03)",
+                          border: "1px solid rgba(0,0,0,0.08)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Updated on {formatDateTime(order.updatedAt)}
+                      </Typography>
+                    )}
+                  </Stack>
+
+
+                  <Stack direction="row" gap={1} flexWrap="wrap" justifyContent="flex-end">
                     {(order.status === "CREATED" ||
                       order.status === "PAYMENT_PENDING" ||
                       order.status === "PAID") && (
