@@ -8,8 +8,9 @@
   <img src="https://img.shields.io/badge/Auth-JWT-red" />
 </p>
 
-A full-stack **Electronics E-Commerce Web Application** built using **React + Material UI** (Frontend) and  
-**Spring Boot + JWT Authentication** (Backend). The application supports a complete online shopping flow along with an advanced **Admin Order & Refund Management** system.
+---
+
+A production-style **Electronics E-Commerce Web Application** built using **React + Material UI** and **Spring Boot** secured with **JWT Authentication**. Implements a complete shopping workflow including **Cart**, **Checkout**, **Order Tracking**, and an advanced **Admin Order & Refund Management** system with **Stock Restoration Logic**.
 
 ---
 
@@ -20,16 +21,19 @@ A full-stack **Electronics E-Commerce Web Application** built using **React + Ma
   - [Admin Features](#admin-features)
 - [Tech Stack](#tech-stack)
 - [Screenshots](#screenshots)
-  - []
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
   - [Backend Setup](#backend-setup)
   - [Frontend Setup](#frontend-setup)
-- [Roles & Access](#roles--access)
+- [Roles & Access](#-roles-and-access)
+  - [User](#-user)
+  - [Admin](#-admin)
 - [Testing](#testing)
 - [Future Enhancements](#future-enhancements)
 - [Project Status](#project-status)
-- [Developer](#developer)
+--[Feature Enhancements](#-future-enhancements)
+--[Project Status](#-project-status)
+--[Developer](#-developer)
 
 ---
 
@@ -86,21 +90,20 @@ This application is designed to deliver a real-world e-commerce experience:
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
+```bash
 ecommerce-project/
-│
 ├── ecommerce-frontend/     # React + MUI Frontend
 ├── ecommerce-backend/      # Spring Boot Backend
 ├── screenshots/            # Project Screenshots
 └── README.md               # Main Documentation
-
-
+```
 ---
 
 ## 🖼 Screenshots
 
-### 🛠 Admin Pages
+### 🛠 User Pages
 
 #### 🏠 Products Page
 ![Products Page](screenshots/products.png)
@@ -161,9 +164,10 @@ ecommerce-project/
 1. Move into backend folder:
 ```bash
 cd ecommerce-backend
+```
 
-
-2. Configure MySQL in:
+2. Configure MySQL in: src/main/resources/application.properties
+```bash
 src/main/resources/application.properties
 
 Example:
@@ -174,34 +178,35 @@ spring.datasource.password=your_password
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-
+```
 
 3.Start backend:
 
+```bash
 mvn spring-boot:run
-
+```
 
 4.✅ Backend runs on:
-
+  
 http://localhost:8080
 
 
 ### ✅ Frontend Setup (React)
 
 1.Move into frontend folder:
-
+```bash
 cd ecommerce-frontend
-
+```
 
 2.Install dependencies:
-
+```bash
 npm install
-
+```
 
 3.Start frontend:
-
+```bash
 npm run dev
-
+```
 
 4.✅ Frontend runs on:
 
@@ -209,9 +214,9 @@ http://localhost:5173
 
 ---
 
-🔐 Authentication & Roles
+## 🔐 ROLES AND ACCESS
 
-👤 USER
+### 👤 USER
 
 Browse products
 
@@ -223,7 +228,7 @@ Request refund for delivered orders
 
 ---
 
-🛠 ADMIN
+### 🛠 ADMIN
 
 View and manage all orders
 
@@ -233,7 +238,7 @@ Handle refunds and update refund status
 
 ---
 
-🧪 Testing
+## 🧪 Testing
 
 All features were manually tested for end-to-end functionality:
 
@@ -244,4 +249,30 @@ Flow: Cart -> Checkout -> Order placement.
 Admin: Order status transition and refund lifecycle.
 
 Database: Stock restoration verified in MySQL after refunds.
+
+---
+
+## 🚀 Future Enhancements
+
+Online payment gateway integration (Razorpay / Stripe)
+
+Product reviews and ratings
+
+Admin analytics dashboard
+
+Email notifications (Order placed / shipped / delivered)
+
+---
+
+## 📌 Project Status
+
+✅ Active Development / Improving UI & Features
+
+---
+
+## 👨‍💻 Developer
+
+Developed by Ranjith A 🚀
+
+---
 
