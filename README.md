@@ -33,7 +33,7 @@ A production-style **Electronics E-Commerce Web Application** built using **Reac
 - [Testing](#-testing)
 -[Feature Enhancements](#-future-enhancements)
 -[Project Status](#-project-status)
--[Hi](#hi)
+-[Developer](#-developer)
 
 ---
 
@@ -259,7 +259,7 @@ http://localhost:5173
 
 ---
 
-##  Hi
+## 🏠 Developer
 
 Developed by Ranjith A 🚀
 
