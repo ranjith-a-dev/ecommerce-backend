@@ -15,8 +15,8 @@ export const decodeToken = () => {
     );
 
     return JSON.parse(jsonPayload);
+  // eslint-disable-next-line no-unused-vars
   } catch (error) {
-    console.error("Failed to decode token:", error);
     return null;
   }
 };
@@ -61,3 +61,14 @@ export const logout = () => {
   localStorage.removeItem("token");
   window.location.href = "/login";
 };
+
+export const getToken = () => {
+  const token = localStorage.getItem("token");
+  if (!token || token === "null" || token === "undefined") return null;
+  return token;
+};
+
+export const clearAuth = () => {
+  localStorage.removeItem("token");
+};
+

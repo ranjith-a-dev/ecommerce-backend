@@ -33,7 +33,7 @@ const Register = () => {
 
   const [msg, setMsg] = useState({
     text: "",
-    type: "", // "error" | "success"
+    type: "",
   });
 
   const passwordRegex =
@@ -66,7 +66,7 @@ const Register = () => {
 
       await authService.register(username.trim(), password);
 
-      setMsg({ text: "User registered successfully ✅", type: "success" });
+      setMsg({ text: "User registered successfully", type: "success" });
 
       setTimeout(() => {
         navigate("/login", { replace: true });

@@ -20,6 +20,9 @@ import {
   TextField,
   InputAdornment,
   IconButton,
+  FormControl,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -136,8 +139,8 @@ const Orders = () => {
       const res = await orderService.getMyOrders(params);
       const orderData = res.data?.content || res.data || [];
       setOrders(Array.isArray(orderData) ? orderData : []);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error("Failed to fetch orders:", err);
       setOrders([]);
       showToast("Failed to fetch orders", "error");
     } finally {
@@ -312,17 +315,43 @@ const Orders = () => {
 
         <Divider sx={{ my: 2.5 }} />
 
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <FilterButton value={null} label="All" />
-          <FilterButton value="CREATED" label="Created" />
-          <FilterButton value="PAYMENT_PENDING" label="Payment Pending" />
-          <FilterButton value="PAID" label="Paid" />
-          <FilterButton value="SHIPPED" label="Shipped" />
-          <FilterButton value="DELIVERED" label="Delivered" />
-          <FilterButton value="CANCELLED" label="Cancelled" />
-          <FilterButton value="REFUND_INITIATED" label="Refund Initiated" />
-          <FilterButton value="REFUNDED" label="Refunded" />
-        </Box>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "stretch", sm: "center" }}
+          justifyContent="flex-start"
+          gap={1.2}
+        >
+          <Typography sx={{ fontWeight: 900, color: "text.secondary", minWidth: 80 }}>
+            Filter by :
+          </Typography>
+
+          <FormControl size="small" sx={{ width: { xs: "100%", sm: 260 } }}>
+            <Select
+              value={filter ?? "ALL"}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFilter(val === "ALL" ? null : val);
+              }}
+              sx={{
+                borderRadius: 2,
+                fontWeight: 900,
+                bgcolor: "#fff",
+              }}
+            >
+              <MenuItem value="ALL">All Status</MenuItem>
+              <MenuItem value="CREATED">Created</MenuItem>
+              <MenuItem value="PAYMENT_PENDING">Payment Pending</MenuItem>
+              <MenuItem value="PAID">Paid</MenuItem>
+              <MenuItem value="SHIPPED">Shipped</MenuItem>
+              <MenuItem value="DELIVERED">Delivered</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
+              <MenuItem value="REFUND_INITIATED">Refund Initiated</MenuItem>
+              <MenuItem value="REFUNDED">Refunded</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+
+
       </Paper>
 
       {filteredOrders.length === 0 ? (

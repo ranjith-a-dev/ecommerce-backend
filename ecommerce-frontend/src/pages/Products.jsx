@@ -9,11 +9,15 @@ import {
   Checkbox,
   FormControlLabel,
   Box,
+  Button,
+  Paper,
+  Stack,
 } from "@mui/material";
+import SearchOffRoundedIcon from "@mui/icons-material/SearchOffRounded";
 import { useEffect, useState } from "react";
 import { productService, cartService } from "../api/services";
 import ProductCard from "../components/ProductCard";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -27,6 +31,7 @@ const Products = () => {
 
   const [cartItems, setCartItems] = useState([]);
 
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const search = searchParams.get("search");
 
@@ -42,16 +47,13 @@ const Products = () => {
 
       const res = await productService.getAllProducts(pageNumber - 1, 10, filters);
 
-      // ✅ Support both backend formats:
-      // 1) Pagination: { content: [...], totalPages: n }
-      // 2) Direct Array: [ ... ]
       const data = res.data;
       const productList = Array.isArray(data) ? data : data?.content || [];
 
       setProducts(productList);
       setTotalPages(Array.isArray(data) ? 1 : data?.totalPages || 0);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error("Failed to fetch products", err);
       setProducts([]);
       setTotalPages(0);
     }
@@ -78,16 +80,20 @@ const Products = () => {
       <Typography
         variant="h4"
         gutterBottom
-        sx={{ fontWeight: 700, mb: 4, color: "#1a1a1a" }}
+        sx={{ fontWeight: 900, mb: 3.5, color: "#111827" }}
       >
         Products
       </Typography>
 
-      {/* FILTERS */}
       <Grid
         container
         spacing={2}
-        sx={{ mb: 4, p: 2, backgroundColor: "#f9f9f9", borderRadius: 2 }}
+        sx={{
+          mb: 4,
+          p: 2,
+          backgroundColor: "#f9f9f9",
+          borderRadius: 2,
+        }}
       >
         <Grid item xs={12} sm={6} md={3}>
           <Select
@@ -151,29 +157,111 @@ const Products = () => {
                 size="small"
               />
             }
-            label="In Stock Only"
+            label="Available products only"
             sx={{ width: "100%" }}
           />
         </Grid>
       </Grid>
 
-      {/* PRODUCTS LIST */}
       <Grid container spacing={3} sx={{ mt: 0.5 }}>
-        {products.map((product) => (
-          <Grid item xs={12} sm={6} lg={4} key={product.id} sx={{ display: "flex" }}>
-            <Box sx={{ width: "100%" }}>
-              <ProductCard
-                product={product}
-                cartItems={cartItems}
-                refreshCart={fetchCarts}
-                refreshProducts={() => fetchProducts(page)}
-              />
+  {products.length === 0 ? (
+    <Grid item xs={12} sx={{ width: "100%" }}>
+      <Box
+        sx={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          mt: 6,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            width: "100%",
+            maxWidth: 680,
+            borderRadius: 4,
+            p: { xs: 4, sm: 6 },
+            border: "1px solid rgba(0,0,0,0.08)",
+            bgcolor: "#fff",
+            textAlign: "center",
+          }}
+        >
+          <Stack alignItems="center" spacing={2.2}>
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: 999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "rgba(78,84,200,0.10)",
+                color: "#4e54c8",
+              }}
+            >
+              <SearchOffRoundedIcon sx={{ fontSize: 34 }} />
             </Box>
-          </Grid>
-        ))}
-      </Grid>
 
-      {/* PAGINATION */}
+            <Typography
+              sx={{
+                fontWeight: 900,
+                fontSize: { xs: "1.2rem", sm: "1.4rem" },
+                color: "#111827",
+              }}
+            >
+              {search ? "No results found" : "No products found"}
+            </Typography>
+
+            <Typography
+              sx={{
+                fontWeight: 700,
+                color: "#6b7280",
+                maxWidth: 520,
+                fontSize: { xs: "0.9rem", sm: "1rem" },
+              }}
+            >
+              {search
+                ? `We couldn't find any product for "${search}". Try another keyword.`
+                : "Start shopping and products will appear here."}
+            </Typography>
+
+            <Button
+              variant="contained"
+              onClick={() => navigate("/products")}
+              sx={{
+                mt: 1,
+                textTransform: "none",
+                fontWeight: 900,
+                borderRadius: 2.5,
+                px: 3,
+                py: 1.1,
+                boxShadow: "0 10px 25px rgba(78,84,200,0.25)",
+                background: "linear-gradient(90deg, #4e54c8 0%, #8f94fb 100%)",
+              }}
+            >
+              {search ? "Clear Search" : "Browse Products"}
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
+    </Grid>
+  ) : (
+    products.map((product) => (
+      <Grid item xs={12} sm={6} lg={4} key={product.id} sx={{ display: "flex" }}>
+        <Box sx={{ width: "100%" }}>
+          <ProductCard
+            product={product}
+            cartItems={cartItems}
+            refreshCart={fetchCarts}
+            refreshProducts={() => fetchProducts(page)}
+          />
+        </Box>
+      </Grid>
+    ))
+  )}
+</Grid>
+
+
       {totalPages > 1 && (
         <Pagination
           count={totalPages}

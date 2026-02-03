@@ -32,9 +32,8 @@ const Checkout = () => {
   });
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  // ✅ NEW: place order error message
+  const [errors, setErrors] = useState({});
   const [placeOrderError, setPlaceOrderError] = useState("");
 
   const fetchCart = useCallback(async () => {
@@ -61,12 +60,10 @@ const Checkout = () => {
 
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // ✅ clear field error
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
 
-    // ✅ clear place order error while typing
     if (placeOrderError) {
       setPlaceOrderError("");
     }
@@ -101,9 +98,25 @@ const Checkout = () => {
     );
   };
 
+  const applyBackendFieldErrors = (backendErrors) => {
+    if (!backendErrors || typeof backendErrors !== "object") return;
+
+    const mapped = {};
+
+    Object.keys(backendErrors).forEach((key) => {
+      const msg = backendErrors[key];
+
+      const cleanKey = key.includes(".") ? key.split(".").pop() : key;
+
+      mapped[cleanKey] = msg;
+    });
+
+    setErrors(mapped);
+  };
+
   const handleProceed = async () => {
-    // ✅ clear old error message
     setPlaceOrderError("");
+    setErrors({});
 
     if (!validateForm()) {
       setPlaceOrderError("Please fill all required fields");
@@ -127,7 +140,6 @@ const Checkout = () => {
         shippingAddress: trimmedFormData,
       });
 
-      // ✅ no alert - direct navigation
       navigate("/payment", {
         state: {
           cartItems,
@@ -137,21 +149,34 @@ const Checkout = () => {
         },
       });
     } catch (error) {
-      const msg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to place order. Please try again.";
+      const data = error.response?.data;
 
-      // ✅ show below the button
-      setPlaceOrderError(msg);
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        applyBackendFieldErrors(data);
+        setPlaceOrderError("Please fix the highlighted fields");
+      } else {
+        const msg =
+          data?.message ||
+          error.message ||
+          "Failed to place order. Please try again.";
+        setPlaceOrderError(msg);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const requiredFieldSx = {
+    mb: 2,
+    "& .MuiFormLabel-asterisk": {
+      color: "error.main",
+      fontWeight: 900,
+      ml: 0.2,
+    },
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-      {/* HEADER */}
       <Box sx={{ mb: 4 }}>
         <Typography
           variant="h3"
@@ -172,7 +197,6 @@ const Checkout = () => {
         </Typography>
       </Box>
 
-      {/* PROGRESS INDICATOR */}
       <Stepper activeStep={0} sx={{ mb: 4 }}>
         <Step completed>
           <StepLabel>Shipping Address</StepLabel>
@@ -204,6 +228,7 @@ const Checkout = () => {
               </Box>
 
               <TextField
+                required
                 label="Full Name"
                 fullWidth
                 variant="outlined"
@@ -213,10 +238,11 @@ const Checkout = () => {
                 onChange={handleInputChange}
                 error={!!errors.fullName}
                 helperText={errors.fullName}
-                sx={{ mb: 2 }}
+                sx={requiredFieldSx}
               />
 
               <TextField
+                required
                 label="Phone Number"
                 fullWidth
                 variant="outlined"
@@ -226,10 +252,11 @@ const Checkout = () => {
                 onChange={handleInputChange}
                 error={!!errors.phoneNumber}
                 helperText={errors.phoneNumber}
-                sx={{ mb: 2 }}
+                sx={requiredFieldSx}
               />
 
               <TextField
+                required
                 label="Street Address"
                 fullWidth
                 variant="outlined"
@@ -239,12 +266,13 @@ const Checkout = () => {
                 onChange={handleInputChange}
                 error={!!errors.streetAddress}
                 helperText={errors.streetAddress}
-                sx={{ mb: 2 }}
+                sx={requiredFieldSx}
               />
 
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={6}>
                   <TextField
+                    required
                     label="City"
                     fullWidth
                     variant="outlined"
@@ -254,19 +282,34 @@ const Checkout = () => {
                     onChange={handleInputChange}
                     error={!!errors.city}
                     helperText={errors.city}
+                    sx={{
+                      "& .MuiFormLabel-asterisk": {
+                        color: "error.main",
+                        fontWeight: 900,
+                        ml: 0.2,
+                      },
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
+                    required
                     label="State"
                     fullWidth
                     variant="outlined"
-                    placeholder="NY"
+                    placeholder="TN"
                     name="state"
                     value={formData.state}
                     onChange={handleInputChange}
                     error={!!errors.state}
                     helperText={errors.state}
+                    sx={{
+                      "& .MuiFormLabel-asterisk": {
+                        color: "error.main",
+                        fontWeight: 900,
+                        ml: 0.2,
+                      },
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -274,19 +317,28 @@ const Checkout = () => {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField
+                    required
                     label="Postal Code"
                     fullWidth
                     variant="outlined"
-                    placeholder="10001"
+                    placeholder="641001"
                     name="postalCode"
                     value={formData.postalCode}
                     onChange={handleInputChange}
                     error={!!errors.postalCode}
                     helperText={errors.postalCode}
+                    sx={{
+                      "& .MuiFormLabel-asterisk": {
+                        color: "error.main",
+                        fontWeight: 900,
+                        ml: 0.2,
+                      },
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
+                    required
                     label="Country"
                     fullWidth
                     variant="outlined"
@@ -296,12 +348,32 @@ const Checkout = () => {
                     onChange={handleInputChange}
                     error={!!errors.country}
                     helperText={errors.country}
+                    sx={{
+                      "& .MuiFormLabel-asterisk": {
+                        color: "error.main",
+                        fontWeight: 900,
+                        ml: 0.2,
+                      },
+                    }}
                   />
                 </Grid>
               </Grid>
-
-              <Divider sx={{ my: 3 }} />
-
+                    <Grid item xs={12} sm={6}>
+                      <Divider sx={{ my: 1 }} />
+              </Grid>
+                {placeOrderError && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "error.main",
+                      fontWeight: 700,
+                      mt: 1,
+                      mb: 2,
+                    }}
+                  >
+                    {placeOrderError}
+                  </Typography>
+                )}
               <TextField
                 label="Delivery Instructions (Optional)"
                 fullWidth
@@ -327,9 +399,9 @@ const Checkout = () => {
               border: "1px solid #e0e0e0",
               position: "sticky",
               top: 20,
+              minHeight: 520,
             }}
           >
-            {/* ORDER ITEMS */}
             <Box sx={{ mb: 2.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <ShoppingBag sx={{ mr: 1, color: "#1976d2" }} />
@@ -443,7 +515,6 @@ const Checkout = () => {
 
             <Divider sx={{ my: 2 }} />
 
-            {/* TOTAL */}
             <Box
               sx={{
                 display: "flex",
@@ -493,23 +564,7 @@ const Checkout = () => {
             >
               {loading ? "Processing..." : "Place Order"}
             </Button>
-
-            {/* ✅ SIMPLE TEXT MESSAGE BELOW BUTTON */}
-            {placeOrderError && (
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: -0.5,
-                  mb: 1.5,
-                  textAlign: "center",
-                  fontWeight: 600,
-                  color: "error.main",
-                }}
-              >
-                {placeOrderError}
-              </Typography>
-            )}
-
+              
             <Button
               variant="outlined"
               fullWidth
@@ -534,6 +589,7 @@ const Checkout = () => {
                 borderRadius: 1,
               }}
             >
+
               <Typography
                 variant="body2"
                 sx={{

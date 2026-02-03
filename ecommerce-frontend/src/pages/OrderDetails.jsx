@@ -13,8 +13,9 @@ import {
   TableBody,
   TableCell,
   TableRow,
+  Button,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { orderService } from "../api/services";
 
@@ -83,8 +84,9 @@ const SectionTitle = ({ title }) => {
   );
 };
 
-const AdminOrderDetails = () => {
+const OrderDetails = () => {
   const { orderId } = useParams();
+  const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -95,8 +97,8 @@ const AdminOrderDetails = () => {
         setLoading(true);
         const res = await orderService.getOrderById(orderId);
         setOrder(res.data);
+      // eslint-disable-next-line no-unused-vars
       } catch (e) {
-        console.error("Admin order fetch error", e);
         setOrder(null);
       } finally {
         setLoading(false);
@@ -134,7 +136,6 @@ const AdminOrderDetails = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4, px: { xs: 2, md: 5 } }}>
-      {/* HEADER CARD */}
       <Card
         elevation={0}
         sx={{
@@ -159,9 +160,7 @@ const AdminOrderDetails = () => {
                 }}
               >
                 Order Details
-            </Typography>
-
-
+              </Typography>
             </Box>
 
             <Stack direction="row" alignItems="center" gap={1}>
@@ -180,7 +179,6 @@ const AdminOrderDetails = () => {
         </CardContent>
       </Card>
 
-      {/* MAIN CARD */}
       <Card
         elevation={0}
         sx={{
@@ -189,22 +187,19 @@ const AdminOrderDetails = () => {
         }}
       >
         <CardContent sx={{ px: 3, py: 3 }}>
-          {/* Order Info */}
           <SectionTitle title="Order Info" />
 
           <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
             <InfoBox title="ORDER ID" value={`#${order.orderId}`} />
-            <InfoBox title="TOTAL AMOUNT" value={formatCurrency(order.totalAmount)} />
+            <InfoBox
+              title="TOTAL AMOUNT"
+              value={formatCurrency(order.totalAmount)}
+            />
             <InfoBox title="CREATED AT" value={formatDateTime(order.createdAt)} />
           </Stack>
 
           <Divider sx={{ my: 3 }} />
 
-        
-
-          <Divider sx={{ my: 3 }} />
-
-          {/* Delivery Details */}
           <SectionTitle title="Delivery Details" />
 
           <Paper
@@ -220,7 +215,9 @@ const AdminOrderDetails = () => {
               {order?.shippingAddress?.fullName || "—"}
             </Typography>
 
-            <Typography sx={{ color: "text.secondary", fontWeight: 700, mt: 0.6 }}>
+            <Typography
+              sx={{ color: "text.secondary", fontWeight: 700, mt: 0.6 }}
+            >
               Phone: {order?.shippingAddress?.phoneNumber || "—"}
             </Typography>
 
@@ -229,11 +226,18 @@ const AdminOrderDetails = () => {
                 ? `${order.shippingAddress.streetAddress}, ${order.shippingAddress.city}, ${order.shippingAddress.state}, ${order.shippingAddress.country} - ${order.shippingAddress.postalCode}`
                 : "No shipping address"}
             </Typography>
+
+            {order?.shippingAddress?.deliveryInstructions && (
+              <Typography
+                sx={{ fontWeight: 700, color: "text.secondary", mt: 0.8 }}
+              >
+                Instructions: {order.shippingAddress.deliveryInstructions}
+              </Typography>
+            )}
           </Paper>
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Items */}
           <SectionTitle title="Items in this Order" />
 
           <Paper
@@ -271,7 +275,13 @@ const AdminOrderDetails = () => {
                       <Typography sx={{ fontWeight: 900 }}>
                         {item.productName}
                       </Typography>
-                      <Typography sx={{ color: "text.secondary", fontWeight: 700, fontSize: "0.85rem" }}>
+                      <Typography
+                        sx={{
+                          color: "text.secondary",
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                        }}
+                      >
                         Product ID: {item.productId}
                       </Typography>
                     </TableCell>
@@ -292,7 +302,6 @@ const AdminOrderDetails = () => {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Payment Summary small */}
           <SectionTitle title="Payment Summary" />
 
           <Paper
@@ -304,7 +313,11 @@ const AdminOrderDetails = () => {
               py: 1.4,
             }}
           >
-            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.6 }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              sx={{ py: 0.6 }}
+            >
               <Typography sx={{ color: "text.secondary", fontWeight: 800 }}>
                 Items Subtotal
               </Typography>
@@ -315,7 +328,11 @@ const AdminOrderDetails = () => {
 
             <Divider sx={{ my: 1 }} />
 
-            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.6 }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              sx={{ py: 0.6 }}
+            >
               <Typography sx={{ color: "text.secondary", fontWeight: 900 }}>
                 Total Amount
               </Typography>
@@ -323,6 +340,36 @@ const AdminOrderDetails = () => {
                 {formatCurrency(order.totalAmount)}
               </Typography>
             </Stack>
+
+            {(order.status === "CREATED" ||
+              order.status === "PAYMENT_PENDING") && (
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  sx={{
+                    fontWeight: 900,
+                    py: 1.2,
+                    borderRadius: 2,
+                    textTransform: "none",
+                  }}
+                  onClick={() =>
+                    navigate("/payment", {
+                      state: {
+                        orderId: order.orderId,
+                        totalAmount: order.totalAmount,
+                        shippingAddress: order.shippingAddress,
+                        cartItems: order.items,
+                      },
+                    })
+                  }
+                >
+                  {order.status === "PAYMENT_PENDING"
+                    ? "Retry Payment"
+                    : "Pay Now"}
+                </Button>
+              </Box>
+            )}
           </Paper>
         </CardContent>
       </Card>
@@ -330,4 +377,4 @@ const AdminOrderDetails = () => {
   );
 };
 
-export default AdminOrderDetails;
+export default OrderDetails;

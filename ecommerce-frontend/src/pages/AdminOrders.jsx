@@ -156,7 +156,6 @@ const AdminOrders = () => {
       setOrders(res.data.content || []);
       setTotalPages(res.data.totalPages || 1);
     } catch (error) {
-      console.error("Failed to fetch orders", error);
       alert(error.response?.data?.message || "Failed to load orders");
       setOrders([]);
       setTotalPages(1);

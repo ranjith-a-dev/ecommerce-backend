@@ -51,22 +51,32 @@ const AdminProductEdit = () => {
     imageUrls: "",
   });
 
+  const [formMsg, setFormMsg] = useState({ text: "", type: "" });
+
+  const showMsg = (text, type = "info") => {
+    setFormMsg({ text, type });
+    setTimeout(() => {
+      setFormMsg({ text: "", type: "" });
+    }, 2500);
+  };
+
   useEffect(() => {
     if (!isAdmin()) {
-      alert("You are not authorized to access this page");
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
 
     const loadData = async () => {
       try {
+        setLoading(true);
+
         const categoryRes = await categoryService.getAllCategories();
         setCategories(categoryRes.data || []);
 
         if (!isCreate) {
           const productRes = await productService.getProductById(productId);
           const product = productRes.data;
-          
+
           setFormData({
             name: product.name || "",
             description: product.description || "",
@@ -80,9 +90,9 @@ const AdminProductEdit = () => {
             imageUrls: product.imageUrls?.join("\n") || "",
           });
         }
+      // eslint-disable-next-line no-unused-vars
       } catch (error) {
-        alert("Failed to load data");
-        console.error(error);
+        showMsg("Failed to load data", "error");
       } finally {
         setLoading(false);
       }
@@ -108,19 +118,21 @@ const AdminProductEdit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormMsg({ text: "", type: "" });
 
     if (
-      !formData.name ||
+      !formData.name?.trim() ||
       !formData.price ||
       !formData.stock ||
       !formData.categoryId
     ) {
-      alert("Please fill in all required fields");
+      showMsg("Please fill in all required fields ⚠️", "error");
       return;
     }
 
     try {
       setSubmitting(true);
+      showMsg(isCreate ? "Creating product..." : "Updating product...", "info");
 
       const submitData = {
         name: formData.name.trim(),
@@ -136,19 +148,29 @@ const AdminProductEdit = () => {
 
       if (isCreate) {
         await productService.createProduct(submitData);
-        alert("Product created successfully");
+        showMsg("Product created successfully", "success");
       } else {
         await productService.updateProduct(productId, submitData);
-        alert("Product updated successfully");
+        showMsg("Product updated successfully", "success");
       }
 
-      navigate("/products");
+      setTimeout(() => {
+        navigate("/products");
+      }, 900);
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to save product");
-      console.error(error);
+      showMsg(
+        error.response?.data?.message || "Failed to save product",
+        "error"
+      );
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const getMsgColor = (type) => {
+    if (type === "success") return "#2e7d32";
+    if (type === "error") return "#d32f2f";
+    return "#64748b";
   };
 
   if (loading) {
@@ -215,16 +237,6 @@ const AdminProductEdit = () => {
             </Stack>
 
             <Stack direction="row" alignItems="center" gap={1}>
-              <Chip
-                label={isCreate ? "New" : "Editing"}
-                variant="outlined"
-                sx={{
-                  borderRadius: 999,
-                  fontWeight: 800,
-                  bgcolor: "rgba(33,150,243,0.10)",
-                  borderColor: "rgba(33,150,243,0.35)",
-                }}
-              />
               <Chip
                 label={`${imageUrlCount} image URL${
                   imageUrlCount === 1 ? "" : "s"
@@ -386,23 +398,38 @@ const AdminProductEdit = () => {
 
               <Grid item xs={12}>
                 <Stack direction={{ xs: "column", sm: "row" }} gap={1.5}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={submitting}
-                    sx={{
-                      flex: 1,
-                      borderRadius: 2,
-                      fontWeight: 900,
-                      py: 1.1,
-                    }}
-                  >
-                    {submitting
-                      ? "Saving..."
-                      : isCreate
-                      ? "Create Product"
-                      : "Update Product"}
-                  </Button>
+                  <Box sx={{ flex: 1 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={submitting}
+                      fullWidth
+                      sx={{
+                        borderRadius: 2,
+                        fontWeight: 900,
+                        py: 1.1,
+                      }}
+                    >
+                      {submitting
+                        ? "Saving..."
+                        : isCreate
+                        ? "Create Product"
+                        : "Update Product"}
+                    </Button>
+
+                    {formMsg.text && (
+                      <Typography
+                        sx={{
+                          mt: 1,
+                          fontWeight: 800,
+                          fontSize: "0.9rem",
+                          color: getMsgColor(formMsg.type),
+                        }}
+                      >
+                        {formMsg.text}
+                      </Typography>
+                    )}
+                  </Box>
 
                   <Button
                     variant="outlined"

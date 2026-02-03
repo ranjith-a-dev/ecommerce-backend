@@ -139,7 +139,6 @@ const AdminOrderDetails = () => {
       const res = await adminOrderService.getAdminOrderById(orderId);
       setOrder(res.data);
     } catch (e) {
-      console.error(e);
       alert(e.response?.data?.message || "Failed to load order details");
       navigate("/admin/orders");
     } finally {

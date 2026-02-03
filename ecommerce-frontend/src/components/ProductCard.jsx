@@ -22,11 +22,9 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 
 const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
-
   const location = useLocation();
-  const token = localStorage.getItem("token");
-
   const navigate = useNavigate();
+
   const isUserAdmin = isAdmin();
 
   const outOfStock = Number(product?.stock || 0) === 0;
@@ -37,18 +35,20 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
   const [adding, setAdding] = useState(false);
 
   const [msg, setMsg] = useState({ text: "", type: "" });
-
   const clearMsg = () => setMsg({ text: "", type: "" });
 
   const handleAdd = async () => {
     clearMsg();
 
-    if (!token) {
+    const token = localStorage.getItem("token");
+
+    if (!token || token === "null" || token === "undefined") {
       setMsg({ text: "Please login to add items to cart", type: "error" });
 
       setTimeout(() => {
+        clearMsg();
         navigate("/login", { state: { from: location.pathname } });
-      }, 800);
+      }, 2000);
 
       return;
     }
@@ -58,42 +58,48 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
     try {
       setAdding(true);
       await cartService.addToCart(product.id, 1);
+
       setMsg({ text: "Added to cart", type: "success" });
+
+      setTimeout(() => {
+        clearMsg();
+      }, 2000);
+
       refreshCart?.();
     } catch (err) {
-      setMsg({
-        text: err.response?.data?.message || "Failed to add to cart",
-        type: "error",
-      });
-      console.log("ADD CART ERROR:", err.response?.status, err.response?.data);
+      const errorMsg = err.response?.data?.message || "Failed to add to cart";
+
+      const isUnauthorized =
+        err.response?.status === 401 ||
+        errorMsg.toLowerCase().includes("invalid") ||
+        errorMsg.toLowerCase().includes("expired");
+
+      if (isUnauthorized) {
+        localStorage.removeItem("token");
+
+        setMsg({ text: "Please login to add items to cart", type: "error" });
+
+        setTimeout(() => {
+          clearMsg();
+          navigate("/login", { state: { from: location.pathname } });
+        }, 2000);
+
+        return;
+      }
+
+      setMsg({ text: errorMsg, type: "error" });
     } finally {
       setAdding(false);
     }
   };
 
-
   const handleDelete = async () => {
-    clearMsg();
-
     if (deleting) return;
-
     try {
       setDeleting(true);
-
-      console.log("Deleting product id:", product.id);
-
       await productService.deleteProduct(product.id);
-
       setOpenDelete(false);
-      setMsg({ text: "Product deleted ✅", type: "success" });
-
       refreshProducts?.();
-    } catch (err) {
-      setMsg({
-        text: err.response?.data?.message || "Failed to delete product",
-        type: "error",
-      });
-      console.log("DELETE ERROR:", err.response?.status, err.response?.data);
     } finally {
       setDeleting(false);
     }
@@ -135,7 +141,6 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
               px: 0.8,
               py: 0.4,
               border: "1px solid rgba(78,84,200,0.18)",
-              backdropFilter: "blur(8px)",
             }}
           >
             <IconButton
@@ -177,22 +182,14 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
         )}
 
         <Box
-          sx={{
-            position: "relative",
-            cursor: "pointer",
-            bgcolor: "rgba(78,84,200,0.06)",
-          }}
+          sx={{ cursor: "pointer", bgcolor: "rgba(78,84,200,0.06)" }}
           onClick={() => navigate(`/products/${product.id}`)}
         >
           <CardMedia
             component="img"
             image={product.imageUrls?.[0] || "/placeholder.png"}
             alt={product.name}
-            sx={{
-              height: 220,
-              objectFit: "contain",
-              p: 2.2,
-            }}
+            sx={{ height: 220, objectFit: "contain", p: 2.2 }}
           />
 
           {outOfStock && (
@@ -211,9 +208,8 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
           )}
         </Box>
 
-        <CardContent sx={{ flexGrow: 1, pb: 1.6 }}>
+        <CardContent sx={{ flexGrow: 1 }}>
           <Typography
-            variant="subtitle1"
             sx={{
               fontWeight: 900,
               mb: 0.7,
@@ -222,8 +218,6 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
               minHeight: 44,
-              letterSpacing: -0.2,
-              color: "#1f2937",
             }}
           >
             {product.name}
@@ -232,27 +226,32 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
               justifyContent: "space-between",
+              alignItems: "center",
               mb: 1,
             }}
           >
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 700,
-                color: "#64748b",
-              }}
-            >
-              Stock: {product.stock}
-            </Typography>
+            {isUserAdmin ? (
+              <Typography sx={{ fontWeight: 700, color: "#64748b" }}>
+                Stock: {product.stock}
+              </Typography>
+            ) : (
+              <Chip
+                label="Free Delivery"
+                size="small"
+                sx={{
+                  borderRadius: 999,
+                  fontWeight: 900,
+                  bgcolor: "rgba(34,197,94,0.12)",
+                  color: "#166534",
+                  border: "1px solid rgba(34,197,94,0.25)",
+                }}
+              />
+            )}
 
             <Button
               size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/products/${product.id}`);
-              }}
+              onClick={() => navigate(`/products/${product.id}`)}
               sx={{
                 fontWeight: 900,
                 textTransform: "none",
@@ -266,24 +265,50 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
             </Button>
           </Box>
 
-          <Typography
-            variant="h6"
+          <Box
             sx={{
-              fontWeight: 900,
-              color: "#4e54c8",
-              letterSpacing: -0.3,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1.2,
+              mt: 0.4,
             }}
           >
-            ₹ {Number(product.price || 0).toLocaleString("en-IN")}
-          </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 900,
+                color: "#4e54c8",
+                letterSpacing: -0.3,
+              }}
+            >
+              ₹ {Number(product.price || 0).toLocaleString("en-IN")}
+            </Typography>
 
-          {msg.text && (
+            {msg.type === "success" && (
+              <Typography
+                sx={{
+                  fontSize: "0.82rem",
+                  fontWeight: 900,
+                  color: "#2e7d32",
+                  px: 1.2,
+                  py: 0.35,
+                  borderRadius: 999,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Added to cart
+              </Typography>
+            )}
+          </Box>
+
+          {msg.text && msg.type === "error" && (
             <Typography
               sx={{
                 mt: 1,
                 fontSize: "0.82rem",
-                fontWeight: 700,
-                color: msg.type === "success" ? "#2e7d32" : "#d32f2f",
+                fontWeight: 800,
+                color: "#d32f2f",
               }}
             >
               {msg.text}
@@ -298,13 +323,7 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
               fullWidth
               disabled={outOfStock || addedToCart || adding}
               onClick={handleAdd}
-              startIcon={
-                adding ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <ShoppingCartRoundedIcon />
-                )
-              }
+              startIcon={<ShoppingCartRoundedIcon />}
               sx={{
                 textTransform: "none",
                 fontWeight: 900,
@@ -317,36 +336,26 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
                     : "linear-gradient(90deg, #4e54c8 0%, #8f94fb 100%)",
               }}
             >
-              {outOfStock ? "Out of Stock" : addedToCart ? "Added to cart" : "Add to Cart"}
+              {outOfStock
+                ? "Out of Stock"
+                : addedToCart
+                ? "Added to cart"
+                : "Add to Cart"}
             </Button>
           </Box>
         )}
       </Card>
 
-      <Dialog
-        open={openDelete}
-        onClose={() => (deleting ? null : setOpenDelete(false))}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            border: "1px solid rgba(0,0,0,0.10)",
-          },
-        }}
-      >
+      <Dialog open={openDelete} onClose={() => setOpenDelete(false)}>
         <DialogTitle sx={{ fontWeight: 900 }}>Delete Product</DialogTitle>
-
         <DialogContent>
           <Typography sx={{ color: "#64748b", fontWeight: 600 }}>
             Are you sure you want to delete <b>{product.name}</b>?
           </Typography>
-
           <Typography sx={{ color: "#64748b", mt: 1 }}>
             This action cannot be undone.
           </Typography>
         </DialogContent>
-
         <DialogActions sx={{ p: 2 }}>
           <Button
             onClick={() => setOpenDelete(false)}
@@ -356,14 +365,15 @@ const ProductCard = ({ product, cartItems, refreshCart, refreshProducts }) => {
           >
             Cancel
           </Button>
-
           <Button
             onClick={handleDelete}
-            variant="contained"
             color="error"
-            sx={{ borderRadius: 2, fontWeight: 900, textTransform: "none" }}
+            variant="contained"
             disabled={deleting}
-            startIcon={deleting ? <CircularProgress size={18} color="inherit" /> : null}
+            sx={{ borderRadius: 2, fontWeight: 900, textTransform: "none" }}
+            startIcon={
+              deleting ? <CircularProgress size={18} color="inherit" /> : null
+            }
           >
             {deleting ? "Deleting..." : "Delete"}
           </Button>

@@ -79,7 +79,7 @@ const Navbar = () => {
             whiteSpace: "nowrap",
           }}
         >
-          E-Commerce
+          Electro Mart
         </Typography>
 
         <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>

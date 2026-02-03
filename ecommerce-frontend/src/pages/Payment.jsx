@@ -86,26 +86,22 @@ const Payment = () => {
 
       await paymentService.markPaymentSuccess(paymentRef);
 
-      try {
-        const cartRes = await cartService.getCart();
-        const items = cartRes.data;
+      const cartRes = await cartService.getCart();
+      const items = cartRes.data;
 
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            await cartService.removeFromCart(item.productId);
-          }
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          await cartService.removeFromCart(item.productId);
         }
-      } catch (cartErr) {
-        console.error("Error clearing cart:", cartErr);
       }
-
+      
       setStatus("SUCCESS");
 
       setTimeout(() => {
         navigate("/orders", { replace: true });
       }, 1200);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error("Payment Success error:", err);
       setStatus("FAILED");
     } finally {
       setLoading(false);
@@ -124,8 +120,8 @@ const Payment = () => {
       await paymentService.markPaymentFailure(paymentRef);
 
       setStatus("FAILED");
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error("Payment Failure error:", err);
       setStatus("FAILED");
     } finally {
       setLoading(false);
@@ -331,8 +327,8 @@ const Payment = () => {
 
               <RadioGroup value={method} onChange={(e) => setMethod(e.target.value)}>
                 <FormControlLabel value="COD" control={<Radio />} label="Cash on Delivery" />
-                <FormControlLabel value="UPI" control={<Radio />} label="UPI (Demo)" />
-                <FormControlLabel value="CARD" control={<Radio />} label="Card (Demo)" />
+                <FormControlLabel value="UPI" control={<Radio />} label="UPI" />
+                <FormControlLabel value="CARD" control={<Radio />} label="Card" />
               </RadioGroup>
 
               <Divider sx={{ my: 2 }} />
@@ -347,7 +343,7 @@ const Payment = () => {
                   startIcon={loading ? <CircularProgress size={18} /> : <CheckCircleRoundedIcon />}
                   sx={{ borderRadius: 2, fontWeight: 900, py: 1.2, textTransform: "none" }}
                 >
-                  {loading ? "Processing..." : "Pay Success (Demo)"}
+                  {loading ? "Processing..." : "Pay Success "}
                 </Button>
 
                 <Button
@@ -359,7 +355,7 @@ const Payment = () => {
                   startIcon={loading ? <CircularProgress size={18} /> : <CancelRoundedIcon />}
                   sx={{ borderRadius: 2, fontWeight: 900, py: 1.2, textTransform: "none" }}
                 >
-                  {loading ? "Processing..." : "Pay Failed (Demo)"}
+                  {loading ? "Processing..." : "Pay Failed "}
                 </Button>
               </Stack>
 

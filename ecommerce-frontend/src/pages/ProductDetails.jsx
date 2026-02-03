@@ -49,8 +49,8 @@ const ProductDetails = () => {
     productService
       .getProductById(id)
       .then((res) => setProduct(res.data))
+      // eslint-disable-next-line no-unused-vars
       .catch((err) => {
-  console.log("GET PRODUCT ERROR:", err.response?.status, err.response?.data);
   setProduct(null);
 })
 
@@ -60,7 +60,6 @@ const ProductDetails = () => {
   useEffect(() => {
     if (isAdmin) return;
 
-    // ✅ Guest user - don't call cart API
     if (!token) {
       setAlreadyInCart(false);
       setCheckingCart(false);
@@ -271,16 +270,33 @@ const ProductDetails = () => {
                 ₹ {Number(product.price || 0).toLocaleString("en-IN")}
               </Typography>
 
-              <Typography
-                sx={{
-                  mt: 0.6,
-                  fontSize: "0.95rem",
-                  fontWeight: 800,
-                  color: Number(product.stock || 0) > 0 ? "#2e7d32" : "#d32f2f",
-                }}
-              >
-                Stock Available: {Number(product.stock || 0)}
-              </Typography>
+              {isAdmin ? (
+                  <Typography
+                    sx={{
+                      mt: 0.6,
+                      fontSize: "0.95rem",
+                      fontWeight: 800,
+                      color: Number(product.stock || 0) > 0 ? "#2e7d32" : "#d32f2f",
+                    }}
+                  >
+                    Stock Available: {Number(product.stock || 0)}
+                  </Typography>
+                ) : (
+                  <Typography
+                    sx={{
+                      mt: 0.6,
+                      fontSize: "0.95rem",
+                      fontWeight: 800,
+                      color: inStock ? "#2e7d32" : "#d32f2f",
+                    }}
+                  >
+                    {isAdmin
+                      ? `Stock Available: ${Number(product.stock || 0)}`
+                      : inStock
+                      ? "Limited sto"
+                      : "Out of Stock"}
+                  </Typography>
+                )}
 
               <Divider sx={{ my: 2.5, opacity: 0.6 }} />
 

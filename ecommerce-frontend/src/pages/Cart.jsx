@@ -59,7 +59,6 @@ const Cart = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-      {/* HEADER */}
       <Box sx={{ mb: 4 }}>
         <Typography 
           variant="h3" 
@@ -113,7 +112,6 @@ const Cart = () => {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {/* CART ITEMS */}
           <Grid item xs={12} md={8}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {cartItems.map((item) => (
@@ -131,7 +129,6 @@ const Cart = () => {
                     }
                   }}
                 >
-                  {/* IMAGE */}
                   <CardMedia
                     component="img"
                     image={item.imageUrl}
@@ -151,7 +148,6 @@ const Cart = () => {
                     onClick={() => navigate(`/products/${item.productId}`)}
                   />
 
-                  {/* DETAILS */}
                   <CardContent sx={{ flexGrow: 1, p: 0, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <Box>
                       <Typography 
@@ -167,16 +163,6 @@ const Cart = () => {
                       >
                         {item.productName}
                       </Typography>
-
-                      <Chip
-                        label={`Stock: ${item.stock}`}
-                        size="small"
-                        variant="outlined"
-                        sx={{ mt: 0.5 }}
-                      />
-                    </Box>
-
-                    <Box>
                       <Typography 
                         variant="h6"
                         sx={{ 
@@ -188,7 +174,6 @@ const Cart = () => {
                         ₹ {item.price.toLocaleString()}
                       </Typography>
 
-                      {/* QUANTITY CONTROLS */}
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <IconButton
                           size="small"
@@ -244,7 +229,6 @@ const Cart = () => {
                     </Box>
                   </CardContent>
 
-                  {/* REMOVE BUTTON */}
                   <Box sx={{ display: "flex", alignItems: "flex-start", ml: 2 }}>
                     <IconButton
                       color="error"
@@ -265,7 +249,6 @@ const Cart = () => {
             </Box>
           </Grid>
 
-          {/* ORDER SUMMARY SIDEBAR */}
           <Grid item xs={12} md={4}>
             <Paper
               sx={{
@@ -290,7 +273,6 @@ const Cart = () => {
 
               <Divider sx={{ mb: 2 }} />
 
-              {/* SUMMARY ROWS */}
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
                   <Typography color="textSecondary">
@@ -316,7 +298,6 @@ const Cart = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              {/* TOTAL */}
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                 <Typography 
                   variant="h6"
@@ -336,7 +317,6 @@ const Cart = () => {
                 </Typography>
               </Box>
 
-              {/* CHECKOUT BUTTON */}
               <Button
                 variant="contained"
                 size="large"
@@ -359,7 +339,6 @@ const Cart = () => {
                 Proceed to Checkout
               </Button>
 
-              {/* CONTINUE SHOPPING */}
               <Button
                 variant="outlined"
                 size="large"
@@ -375,7 +354,6 @@ const Cart = () => {
                 Continue Shopping
               </Button>
 
-              {/* INFO BOX */}
               <Paper
                 sx={{
                   p: 2,
