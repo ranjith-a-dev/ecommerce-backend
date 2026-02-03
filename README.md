@@ -29,7 +29,6 @@ A production-style **Electronics E-Commerce Web Application** built using **Reac
   - [User](#-user)
   - [Admin](#-admin)
 - [Testing](#testing)
-- [Future Enhancements](#future-enhancements)
 - [Project Status](#project-status)
 --[Feature Enhancements](#-future-enhancements)
 --[Project Status](#-project-status)
@@ -74,16 +73,16 @@ This application is designed to deliver a real-world e-commerce experience:
 ## Tech Stack
 
 ### Frontend
-- React.js
-- Material UI (MUI)
-- React Router DOM
-- Axios
+- React.js (**19.2.0**)
+- Material UI (MUI) (**7.3.7**)
+- React Router DOM (**7.12.0**)
+- Axios (**1.13.2**)
 
 ### Backend
-- Spring Boot
-- Spring Security
-- JWT Authentication
-- Spring Data JPA (Hibernate)
+- Spring Boot (**3.5.10**)
+- Spring Security (**Starter Managed**)
+- JWT Authentication (JJWT **0.11.5**)
+- Spring Data JPA (Hibernate) (**Starter Managed**)
 
 ### Database
 - MySQL
@@ -193,22 +192,22 @@ http://localhost:8080
 
 ### ✅ Frontend Setup (React)
 
-1.Move into frontend folder:
+1. Move into frontend folder:
 ```bash
 cd ecommerce-frontend
 ```
 
-2.Install dependencies:
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-3.Start frontend:
+3. Start frontend:
 ```bash
 npm run dev
 ```
 
-4.✅ Frontend runs on:
+4. Frontend runs on:
 
 http://localhost:5173
 
@@ -218,49 +217,38 @@ http://localhost:5173
 
 ### 👤 USER
 
-Browse products
-
-Manage cart
-
-Checkout and place orders
-
-Request refund for delivered orders
+- Browse products with search, filters, and pagination
+- Add/remove items from cart and update quantities
+- Secure checkout and place orders
+- Track order status and view order details
+- Request refunds for delivered orders
 
 ---
 
 ### 🛠 ADMIN
 
-View and manage all orders
-
-Update order status
-
-Handle refunds and update refund status
+- View and manage all customer orders
+- Update order status (Placed → Shipped → Delivered)
+- Process refund requests and update refund status
 
 ---
 
 ## 🧪 Testing
 
-All features were manually tested for end-to-end functionality:
-
-Auth: Login/Register token persistence.
-
-Flow: Cart -> Checkout -> Order placement.
-
-Admin: Order status transition and refund lifecycle.
-
-Database: Stock restoration verified in MySQL after refunds.
+- All features were manually tested for end-to-end functionality:
+- Auth: Login/Register token persistence.
+- Flow: Cart -> Checkout -> Order placement.
+- Admin: Order status transition and refund lifecycle.
+- Database: Stock restoration verified in MySQL after refunds.
 
 ---
 
 ## 🚀 Future Enhancements
 
-Online payment gateway integration (Razorpay / Stripe)
-
-Product reviews and ratings
-
-Admin analytics dashboard
-
-Email notifications (Order placed / shipped / delivered)
+- Online payment gateway integration (Razorpay / Stripe)
+- Product reviews and ratings
+- Admin analytics dashboard
+- Email notifications (Order placed / shipped / delivered)
 
 ---
 
