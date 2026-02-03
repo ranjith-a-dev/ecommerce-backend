@@ -259,7 +259,7 @@ http://localhost:5173
 
 ---
 
-## 👨‍💻 Developer
+##  Developer
 
 Developed by Ranjith A 🚀
 
