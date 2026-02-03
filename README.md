@@ -6,7 +6,6 @@
   <img src="https://img.shields.io/badge/Backend-Spring%20Boot-brightgreen" />
   <img src="https://img.shields.io/badge/Database-MySQL-orange" />
   <img src="https://img.shields.io/badge/Auth-JWT-red" />
-  <img src="https://img.shields.io/badge/Status-Completed-success" />
 </p>
 
 A full-stack **Electronics E-Commerce Web Application** built using **React + Material UI** (Frontend) and  
@@ -17,8 +16,11 @@ A full-stack **Electronics E-Commerce Web Application** built using **React + Ma
 ## Table of Contents
 - [Overview](#overview)
 - [Key Features](#key-features)
+  - [User Features](#user-features)
+  - [Admin Features](#admin-features)
 - [Tech Stack](#tech-stack)
 - [Screenshots](#screenshots)
+  - []
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
   - [Backend Setup](#backend-setup)
@@ -84,7 +86,162 @@ This application is designed to deliver a real-world e-commerce experience:
 
 ---
 
-## Screenshots
+## Project Structure
 
-✅ Create a folder named `screenshots/` in the root and add these images:
+ecommerce-project/
+│
+├── ecommerce-frontend/     # React + MUI Frontend
+├── ecommerce-backend/      # Spring Boot Backend
+├── screenshots/            # Project Screenshots
+└── README.md               # Main Documentation
+
+
+---
+
+## 🖼 Screenshots
+
+### 🛠 Admin Pages
+
+#### 🏠 Products Page
+![Products Page](screenshots/products.png)
+
+#### 🔎 Product Details Page
+![Product Details](screenshots/product-details.png)
+
+#### 🛒 Cart Page
+![Cart Page](screenshots/cart.png)
+
+#### 📍 Checkout Page
+![Checkout Page](screenshots/checkout.png)
+
+#### 💳 Payment Page
+![Payment Page](screenshots/payment.png)
+
+#### 📦 Orders Page
+![Orders Page](screenshots/orders.png)
+
+#### 📄 Order Details Page
+![Order Details](screenshots/order-details.png)
+
+---
+
+### 🛠 Admin Pages
+
+#### 🔨 Admin Page
+![Admin Page](screenshots/admin-panel.png)
+
+#### 📊 Admin Orders Dashboard
+![Admin Orders](screenshots/admin-orders.png)
+
+#### ✅ Admin Order Details
+![Admin Order Details](screenshots/admin-order-details.png)
+
+#### 🔨 Admin Product Create
+![Admin Product Create](screenshots/product-create.png)
+
+#### 🔨 Admin Product Update
+![Admin Product Update](screenshots/product-update.png)
+
+---
+
+### Sign In / Sign Up Pages
+
+#### 📋 Login Page
+![Login Page](screenshots/login.png)
+
+#### 📋 Register Page
+![Register Page](screenshots/register.png)
+
+---
+
+## ⚙️ Setup Instructions
+
+### ✅ Backend Setup (Spring Boot)
+
+1. Move into backend folder:
+```bash
+cd ecommerce-backend
+
+
+2. Configure MySQL in:
+src/main/resources/application.properties
+
+Example:
+
+spring.datasource.url=jdbc:mysql://localhost:3306/ecommerce_db
+spring.datasource.username=root
+spring.datasource.password=your_password
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+
+3.Start backend:
+
+mvn spring-boot:run
+
+
+4.✅ Backend runs on:
+
+http://localhost:8080
+
+
+### ✅ Frontend Setup (React)
+
+1.Move into frontend folder:
+
+cd ecommerce-frontend
+
+
+2.Install dependencies:
+
+npm install
+
+
+3.Start frontend:
+
+npm run dev
+
+
+4.✅ Frontend runs on:
+
+http://localhost:5173
+
+---
+
+🔐 Authentication & Roles
+
+👤 USER
+
+Browse products
+
+Manage cart
+
+Checkout and place orders
+
+Request refund for delivered orders
+
+---
+
+🛠 ADMIN
+
+View and manage all orders
+
+Update order status
+
+Handle refunds and update refund status
+
+---
+
+🧪 Testing
+
+All features were manually tested for end-to-end functionality:
+
+Auth: Login/Register token persistence.
+
+Flow: Cart -> Checkout -> Order placement.
+
+Admin: Order status transition and refund lifecycle.
+
+Database: Stock restoration verified in MySQL after refunds.
 
