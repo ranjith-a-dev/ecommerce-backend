@@ -31,9 +31,9 @@ A production-style **Electronics E-Commerce Web Application** built using **Reac
   - [User](#-user)
   - [Admin](#-admin)
 - [Testing](#-testing)
--[Feature Enhancements](#-future-enhancements)
--[Project Status](#-project-status)
--[Developer](#-developer)
+- [Feature Enhancements](#-future-enhancements)
+- [Project Status](#-project-status)
+- [Developer](#-developer)
 
 ---
 
