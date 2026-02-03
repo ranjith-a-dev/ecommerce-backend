@@ -37,6 +37,8 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
+    @NotBlank(message = "Description must not be empty")
+    @Column(length = 2000)
     private String description;
 
     @NotNull(message = "Price is required")
