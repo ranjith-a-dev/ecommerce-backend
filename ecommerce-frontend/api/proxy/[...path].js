@@ -1,20 +1,27 @@
 export default async function handler(req, res) {
   const { path = [] } = req.query;
-  const target = `http://yamabiko.proxy.rlwy.net:32838/api/${path.join("/")}`;
 
-  const response = await fetch(target, {
-    method: req.method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: req.headers.authorization || "",
-    },
-    body:
-      req.method !== "GET" && req.method !== "HEAD"
-        ? JSON.stringify(req.body)
-        : undefined,
-  });
+  const backendUrl = `http://yamabiko.proxy.rlwy.net:32838/api/${path.join("/")}${req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : ""}`;
 
-  const data = await response.text();
+  try {
+    const response = await fetch(backendUrl, {
+      method: req.method,
+      headers: {
+        authorization: req.headers.authorization || "",
+        "content-type": "application/json",
+      },
+      body:
+        req.method !== "GET" && req.method !== "HEAD"
+          ? JSON.stringify(req.body)
+          : undefined,
+    });
 
-  res.status(response.status).send(data);
+    const data = await response.text();
+
+    res.status(response.status).send(data);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
 }
