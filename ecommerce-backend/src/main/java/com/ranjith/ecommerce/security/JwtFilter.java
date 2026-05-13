@@ -33,6 +33,11 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         String method = request.getMethod();
 
+        if (path.startsWith("/api/products")) return true;
+        if (path.startsWith("/api/categories")) return true;
+        if (path.startsWith("/api/auth")) return true;
+        if (path.startsWith("/api/cart")) return true;
+
         // Root healthcheck
         if (path.equals("/")) return true;
 
