@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/$1"
     }
   ]
 }
