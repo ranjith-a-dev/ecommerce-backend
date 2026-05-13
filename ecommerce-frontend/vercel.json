@@ -9,8 +9,16 @@
       "destination": "http://yamabiko.proxy.rlwy.net:32838/api/products/:path*"
     },
     {
+      "source": "/backend/products",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/products"
+    },
+    {
       "source": "/backend/categories/:path*",
       "destination": "http://yamabiko.proxy.rlwy.net:32838/api/categories/:path*"
+    },
+    {
+      "source": "/backend/categories",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/categories"
     },
     {
       "source": "/backend/cart/:path*",
