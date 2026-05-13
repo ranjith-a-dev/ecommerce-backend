@@ -3,10 +3,12 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
-# Copy maven wrapper and pom first (layer caching)
 COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
+
+# Fix Windows CRLF line endings so mvnw runs on Linux
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 
 # Download dependencies (cached unless pom.xml changes)
 RUN ./mvnw dependency:go-offline -B
