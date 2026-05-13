@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/$1"
+      "destination": "https://ecommerce-project-production-e2db.up.railway.app/api/$1"
     }
   ]
 }
