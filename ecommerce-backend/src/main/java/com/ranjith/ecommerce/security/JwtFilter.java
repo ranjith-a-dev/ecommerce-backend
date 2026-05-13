@@ -33,32 +33,30 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         String method = request.getMethod();
 
-        if (path.startsWith("/actuator")) {
-            return true;
-        }
+        // Root healthcheck
+        if (path.equals("/")) return true;
 
-        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui.html")) {
-            return true;
-        }
+        // Actuator
+        if (path.startsWith("/actuator")) return true;
 
-        if (path.startsWith("/api/auth")) {
-            return true;
-        }
+        // Swagger
+        if (path.startsWith("/swagger-ui") ||
+            path.startsWith("/v3/api-docs") ||
+            path.equals("/swagger-ui.html")) return true;
 
-        if (HttpMethod.GET.matches(method) && path.startsWith("/api/products")) {
-            return true;
-        }
+        // Auth endpoints
+        if (path.startsWith("/api/auth")) return true;
 
-        if (HttpMethod.GET.matches(method) && path.startsWith("/api/categories")) {
-            return true;
-        }
+        // Public GET endpoints
+        if (HttpMethod.GET.matches(method) && path.startsWith("/api/products")) return true;
+        if (HttpMethod.GET.matches(method) && path.startsWith("/api/categories")) return true;
 
         return false;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws IOException, ServletException {
 
         String authHeader = request.getHeader("Authorization");
 

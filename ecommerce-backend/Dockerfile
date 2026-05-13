@@ -1,18 +1,22 @@
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-COPY pom.xml .
-COPY src ./src
+# Copy the built jar — adjust path to match your build output
+COPY target/*.jar app.jar
 
-RUN mvn clean package -DskipTests
-
-FROM eclipse-temurin:17-jdk
-
-WORKDIR /app
-
-COPY --from=build /app/target/*.jar app.jar
+# Exact JVM tuning for Railway free (512MB container)
+ENV JAVA_OPTS="\
+  -Xms64m \
+  -Xmx384m \
+  -XX:+UseContainerSupport \
+  -XX:MaxRAMPercentage=75.0 \
+  -XX:+UseSerialGC \
+  -XX:TieredStopAtLevel=1 \
+  -Djava.security.egd=file:/dev/./urandom \
+  -XX:+DisableExplicitGC \
+  -noverify"
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
