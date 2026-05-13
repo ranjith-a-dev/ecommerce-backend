@@ -1,8 +1,32 @@
 {
   "rewrites": [
     {
-      "source": "/backend/:path*",
-      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/:path*"
+      "source": "/backend/auth/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/auth/:path*"
+    },
+    {
+      "source": "/backend/products/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/products/:path*"
+    },
+    {
+      "source": "/backend/categories/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/categories/:path*"
+    },
+    {
+      "source": "/backend/cart/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/cart/:path*"
+    },
+    {
+      "source": "/backend/orders/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/orders/:path*"
+    },
+    {
+      "source": "/backend/payments/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/payments/:path*"
+    },
+    {
+      "source": "/backend/admin/:path*",
+      "destination": "http://yamabiko.proxy.rlwy.net:32838/api/admin/:path*"
     }
   ]
 }
