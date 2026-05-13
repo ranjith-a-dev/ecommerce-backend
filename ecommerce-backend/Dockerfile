@@ -1,11 +1,27 @@
+# Stage 1: Build the jar
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /app
+
+# Copy maven wrapper and pom first (layer caching)
+COPY pom.xml .
+COPY mvnw .
+COPY .mvn .mvn
+
+# Download dependencies (cached unless pom.xml changes)
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source and build
+COPY src src
+RUN ./mvnw package -DskipTests -B
+
+# Stage 2: Run the jar
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copy the built jar — adjust path to match your build output
-COPY target/*.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
 
-# Exact JVM tuning for Railway free (512MB container)
 ENV JAVA_OPTS="\
   -Xms64m \
   -Xmx384m \
