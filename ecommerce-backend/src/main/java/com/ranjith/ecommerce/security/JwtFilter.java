@@ -33,6 +33,10 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         String method = request.getMethod();
 
+        if (path.startsWith("/actuator")) {
+            return true;
+        }
+
         if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui.html")) {
             return true;
         }
